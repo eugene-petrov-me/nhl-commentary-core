@@ -1,5 +1,6 @@
 from data_fetch.schedule import get_schedule
 from engine.process_game import process_game_events
+from engine.generate_summary import generate_summary
 from models import GameSchedule
 import os
 import json
@@ -22,6 +23,10 @@ def main():
                         json.dump(event, f)
                         f.write("\n")
                 print(f"✅ Saved events for game {game.game_id}")
+
+                summary = generate_summary(events)
+                print(summary)
+
             else:
                 print(f"⚠️ No events for game {game.game_id}")
         except Exception as e:
