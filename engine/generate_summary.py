@@ -11,7 +11,7 @@ def generate_summary(events: List[Dict]) -> str:
         str: Simple text summary of the game.
     """
     goal_count = sum(1 for event in events if event["event_type"] == "goal")
-    sog_count = sum(1 for event in events if event["event_type"] == "shot-on-goal")
+    sog_count = sum(1 for event in events if event["event_type"] in ["shot-on-goal", "goal"])
     penalty_count = sum(1 for event in events if event["event_type"] == "penalty")
 
     return (
