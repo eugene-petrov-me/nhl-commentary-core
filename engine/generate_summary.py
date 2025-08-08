@@ -140,14 +140,23 @@ def generate_summary(events: List[Dict]) -> str:
                     assists_by_player[assist] += 1
         elif event["event_type"] == "star":
             star_rank = event.get("star")
-            player_id = event.get("players", {}).get("player_id")
+            player_info = event.get("players", {})
+            player_id = player_info.get("player_id")
             if star_rank is not None and player_id is not None:
-                stars[star_rank] = player_id
+                stars[star_rank] = {
+                    "id": player_id,
+                    "name": player_info.get("name"),
+                }
 
     if stars:
         summary += "3 Stars of the Game:\n"
         for rank in sorted(stars.keys()):
-            summary += f"- Star {rank}: Player {stars[rank]}\n"
+            player = stars[rank]
+            name = player.get("name")
+            if name:
+                summary += f"- Star {rank}: {name}\n"
+            else:
+                summary += f"- Star {rank}: Player {player['id']}\n"
 
     # Determine game-winning goal
     gwg = None
