@@ -31,7 +31,6 @@ def test_process_game_events_adds_three_stars(monkeypatch):
     events = process_game_events(123)
     assert {"event_type": "star", "star": 1, "players": {"player_id": 1, "name": "John Doe"}} in events
 
-
 def test_process_game_events_adds_goal_names(monkeypatch):
     def fake_get_play_by_play(game_id):
         return {

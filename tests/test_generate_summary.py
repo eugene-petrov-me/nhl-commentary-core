@@ -51,6 +51,7 @@ def test_generate_summary_player_info():
                 "assist_names": ["Assist Four"],
             },
         },
+
         {"event_type": "star", "star": 1, "players": {"player_id": 101, "name": "Player One"}},
         {"event_type": "star", "star": 2, "players": {"player_id": 201}},
         {"event_type": "star", "star": 3, "players": {"player_id": 102}},
