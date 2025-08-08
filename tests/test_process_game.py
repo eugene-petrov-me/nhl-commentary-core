@@ -30,3 +30,39 @@ def test_process_game_events_adds_three_stars(monkeypatch):
 
     events = process_game_events(123)
     assert {"event_type": "star", "star": 1, "players": {"player_id": 1, "name": "John Doe"}} in events
+
+def test_process_game_events_adds_goal_names(monkeypatch):
+    def fake_get_play_by_play(game_id):
+        return {
+            "plays": [
+                {
+                    "typeDescKey": "goal",
+                    "details": {
+                        "scoringPlayerId": 1,
+                        "assist1PlayerId": 2,
+                        "assist2PlayerId": 3,
+                        "goalieInNetId": 4,
+                        "eventOwnerTeamId": 5,
+                    },
+                    "periodDescriptor": {"number": 1},
+                    "timeInPeriod": "10:00",
+                }
+            ],
+            "rosterSpots": [
+                {"playerId": 1, "firstName": {"default": "John"}, "lastName": {"default": "Doe"}},
+                {"playerId": 2, "firstName": {"default": "Jane"}, "lastName": {"default": "Smith"}},
+                {"playerId": 3, "firstName": {"default": "Bob"}, "lastName": {"default": "Jones"}},
+            ],
+        }
+
+    def fake_get_game_story(game_id):
+        return {"summary": {"threeStars": []}}
+
+    monkeypatch.setattr("engine.process_game.get_play_by_play", fake_get_play_by_play)
+    monkeypatch.setattr("engine.process_game.get_game_story", fake_get_game_story)
+
+    events = process_game_events(456)
+    goal_event = events[0]
+    players = goal_event["players"]
+    assert players["scorer_name"] == "John Doe"
+    assert players["assist_names"] == ["Jane Smith", "Bob Jones"]

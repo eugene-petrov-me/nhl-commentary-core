@@ -16,6 +16,15 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
 
     transformed_events = [transform_event(e) for e in events]
 
+    for event in transformed_events:
+        if event.get("event_type") == "goal":
+            players = event.get("players", {})
+            scorer_id = players.get("scorer_id")
+            if scorer_id is not None:
+                players["scorer_name"] = player_map.get(scorer_id)
+            assist_ids = players.get("assist_ids", [])
+            players["assist_names"] = [player_map.get(aid) for aid in assist_ids]
+
     story = get_game_story(game_id)
     stars = story.get("summary", {}).get("threeStars", [])
     for star in stars:
