@@ -167,6 +167,8 @@ def generate_summary(events: List[Dict]) -> str:
                 stars[star_rank] = {
                     "id": player_id,
                     "name": player_info.get("name"),
+                    "position": player_info.get("position"),
+                    "stats": player_info.get("stats", {}),
                 }
                 if player_info.get("name"):
                     player_names[player_id] = player_info.get("name")
@@ -185,7 +187,26 @@ def generate_summary(events: List[Dict]) -> str:
         summary += "3 Stars of the Game:\n"
         for rank in sorted(stars.keys()):
             player = stars[rank]
-            summary += f"- Star {rank}: {format_player(player['id'])}\n"
+            line = f"- Star {rank}: {format_player(player['id'])}"
+            if player.get("position"):
+                line += f" ({player['position']})"
+            stats = player.get("stats") or {}
+            stat_parts = []
+            if "goalsAgainstAverage" in stats or "savePctg" in stats:
+                if "goalsAgainstAverage" in stats:
+                    stat_parts.append(f"GAA: {stats['goalsAgainstAverage']}")
+                if "savePctg" in stats:
+                    stat_parts.append(f"SV%: {stats['savePctg']}")
+            else:
+                if "goals" in stats:
+                    stat_parts.append(f"Goals: {stats['goals']}")
+                if "assists" in stats:
+                    stat_parts.append(f"Assists: {stats['assists']}")
+                if "points" in stats:
+                    stat_parts.append(f"Points: {stats['points']}")
+            if stat_parts:
+                line += " - " + ", ".join(stat_parts)
+            summary += line + "\n"
 
     # Determine game-winning goal
     gwg = None

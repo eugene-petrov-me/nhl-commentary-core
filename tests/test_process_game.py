@@ -18,18 +18,47 @@ def test_process_game_events_adds_three_stars(monkeypatch):
                     "playerId": 1,
                     "firstName": {"default": "John"},
                     "lastName": {"default": "Doe"},
+                    "teamId": 10,
                 }
             ],
+            "homeTeam": {"id": 10, "name": {"default": "Oilers"}, "abbrev": "EDM"},
+            "awayTeam": {"id": 20, "name": {"default": "Stars"}, "abbrev": "DAL"},
         }
 
     def fake_get_game_story(game_id):
-        return {"summary": {"threeStars": [{"star": 1, "playerId": 1}]}}
+        return {
+            "summary": {
+                "threeStars": [
+                    {
+                        "star": 1,
+                        "playerId": 1,
+                        "position": "C",
+                        "goals": 2,
+                        "assists": 1,
+                        "points": 3,
+                        "teamAbbrev": "EDM",
+                    }
+                ]
+            }
+        }
 
     monkeypatch.setattr("engine.process_game.get_play_by_play", fake_get_play_by_play)
     monkeypatch.setattr("engine.process_game.get_game_story", fake_get_game_story)
 
     events = process_game_events(123)
-    assert {"event_type": "star", "star": 1, "players": {"player_id": 1, "name": "John Doe"}} in events
+    assert {
+        "event_type": "star",
+        "star": 1,
+        "team_id": 10,
+        "team_name": "Oilers",
+        "players": {
+            "player_id": 1,
+            "name": "John Doe",
+            "team_id": 10,
+            "position": "C",
+            "stats": {"goals": 2, "assists": 1, "points": 3},
+        },
+    } in events
 
 def test_process_game_events_adds_goal_names(monkeypatch):
     def fake_get_play_by_play(game_id):
@@ -53,6 +82,8 @@ def test_process_game_events_adds_goal_names(monkeypatch):
                 {"playerId": 2, "firstName": {"default": "Jane"}, "lastName": {"default": "Smith"}},
                 {"playerId": 3, "firstName": {"default": "Bob"}, "lastName": {"default": "Jones"}},
             ],
+            "homeTeam": {"id": 5, "name": {"default": "Sharks"}, "abbrev": "SJS"},
+            "awayTeam": {"id": 6, "name": {"default": "Kings"}, "abbrev": "LAK"},
         }
 
     def fake_get_game_story(game_id):
@@ -66,3 +97,4 @@ def test_process_game_events_adds_goal_names(monkeypatch):
     players = goal_event["players"]
     assert players["scorer_name"] == "John Doe"
     assert players["assist_names"] == ["Jane Smith", "Bob Jones"]
+    assert goal_event["team_name"] == "Sharks"
