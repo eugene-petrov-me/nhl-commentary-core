@@ -27,6 +27,7 @@ def test_generate_summary_player_info():
             "event_type": "goal",
             "period": 1,
             "team_id": 1,
+            "team_name": "Team 1",
             "players": {
                 "scorer_id": 101,
                 "scorer_name": "Player One",
@@ -38,12 +39,14 @@ def test_generate_summary_player_info():
             "event_type": "goal",
             "period": 2,
             "team_id": 2,
+            "team_name": "Team 2",
             "players": {"scorer_id": 201, "scorer_name": "Player Two", "assist_ids": []},
         },
         {
             "event_type": "goal",
             "period": 3,
             "team_id": 1,
+            "team_name": "Team 1",
             "players": {
                 "scorer_id": 101,
                 "scorer_name": "Player One",
@@ -60,9 +63,10 @@ def test_generate_summary_player_info():
     summary = generate_summary(events)
 
     assert "3 Stars of the Game" in summary
-    assert "- Star 1: Player One" in summary
-    assert "- Star 2: Player 201" in summary
-    assert "Game-winning goal: Player One" in summary
-    assert "Top goal scorers (2): Player One" in summary
-    assert "Top point scorers (2): Player One" in summary
+    assert "- Star 1: Player One (Team 1)" in summary
+    assert "- Star 2: Player Two (Team 2)" in summary
+    assert "- Star 3: Assist Two (Team 1)" in summary
+    assert "Game-winning goal: Player One (Team 1)" in summary
+    assert "Top goal scorers (2): Player One (Team 1)" in summary
+    assert "Top point scorers (2): Player One (Team 1)" in summary
 

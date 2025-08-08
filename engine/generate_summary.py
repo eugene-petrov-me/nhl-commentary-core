@@ -129,22 +129,33 @@ def generate_summary(events: List[Dict]) -> str:
     assists_by_player = defaultdict(int)
     goal_sequence = []  # (team_id, scorer_id) to determine GWG
     player_names = {}
+    player_teams = {}
+    team_names = {}
 
     for event in events:
+        team_id = event.get("team_id")
+        if team_id is not None:
+            team_name = event.get("team_name") or f"Team {team_id}"
+            team_names[team_id] = team_name
+
         if event["event_type"] == "goal":
             players = event.get("players", {})
             scorer = players.get("scorer_id")
             if scorer is not None:
                 goals_by_player[scorer] += 1
-                goal_sequence.append((event.get("team_id"), scorer))
+                goal_sequence.append((team_id, scorer))
                 name = players.get("scorer_name")
                 if name:
                     player_names[scorer] = name
+                if team_id is not None:
+                    player_teams[scorer] = team_id
             assist_ids = players.get("assist_ids", [])
             assist_names = players.get("assist_names", [])
             for aid in assist_ids:
                 if aid is not None:
                     assists_by_player[aid] += 1
+                    if team_id is not None:
+                        player_teams[aid] = team_id
             for aid, name in zip(assist_ids, assist_names):
                 if aid is not None and name:
                     player_names[aid] = name
@@ -159,16 +170,22 @@ def generate_summary(events: List[Dict]) -> str:
                 }
                 if player_info.get("name"):
                     player_names[player_id] = player_info.get("name")
+                star_team = player_info.get("team_id")
+                if star_team is not None:
+                    player_teams[player_id] = star_team
+
+    def format_player(pid: int) -> str:
+        name = player_names.get(pid, f"Player {pid}")
+        team = team_names.get(player_teams.get(pid))
+        if team:
+            return f"{name} ({team})"
+        return name
 
     if stars:
         summary += "3 Stars of the Game:\n"
         for rank in sorted(stars.keys()):
             player = stars[rank]
-            name = player.get("name")
-            if name:
-                summary += f"- Star {rank}: {name}\n"
-            else:
-                summary += f"- Star {rank}: Player {player['id']}\n"
+            summary += f"- Star {rank}: {format_player(player['id'])}\n"
 
     # Determine game-winning goal
     gwg = None
@@ -184,18 +201,14 @@ def generate_summary(events: List[Dict]) -> str:
                     gwg = scorer
                     break
     if gwg is not None:
-        name = player_names.get(gwg)
-        if name:
-            summary += f"Game-winning goal: {name}\n"
-        else:
-            summary += f"Game-winning goal: Player {gwg}\n"
+        summary += f"Game-winning goal: {format_player(gwg)}\n"
 
     if goals_by_player:
         max_goals = max(goals_by_player.values())
         top_goal_players = [pid for pid, g in goals_by_player.items() if g == max_goals]
         summary += (
             f"Top goal scorers ({max_goals}): "
-            + ", ".join(player_names.get(pid, f"Player {pid}") for pid in sorted(top_goal_players))
+            + ", ".join(format_player(pid) for pid in sorted(top_goal_players))
             + "\n"
         )
 
@@ -209,7 +222,7 @@ def generate_summary(events: List[Dict]) -> str:
         top_point_players = [pid for pid, p in points_by_player.items() if p == max_points]
         summary += (
             f"Top point scorers ({max_points}): "
-            + ", ".join(player_names.get(pid, f"Player {pid}") for pid in sorted(top_point_players))
+            + ", ".join(format_player(pid) for pid in sorted(top_point_players))
             + "\n"
         )
 
