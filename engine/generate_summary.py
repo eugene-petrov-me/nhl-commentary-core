@@ -123,4 +123,69 @@ def generate_summary(events: List[Dict]) -> str:
                     f"  Delayed penalties: {stats['delayed_penalties']}\n"
                 )
 
+    # Player-focused information
+    stars = {}
+    goals_by_player = defaultdict(int)
+    assists_by_player = defaultdict(int)
+    goal_sequence = []  # (team_id, scorer_id) to determine GWG
+
+    for event in events:
+        if event["event_type"] == "goal":
+            scorer = event.get("players", {}).get("scorer_id")
+            if scorer is not None:
+                goals_by_player[scorer] += 1
+                goal_sequence.append((event.get("team_id"), scorer))
+            for assist in event.get("players", {}).get("assist_ids", []):
+                if assist is not None:
+                    assists_by_player[assist] += 1
+        elif event["event_type"] == "star":
+            star_rank = event.get("star")
+            player_id = event.get("players", {}).get("player_id")
+            if star_rank is not None and player_id is not None:
+                stars[star_rank] = player_id
+
+    if stars:
+        summary += "3 Stars of the Game:\n"
+        for rank in sorted(stars.keys()):
+            summary += f"- Star {rank}: Player {stars[rank]}\n"
+
+    # Determine game-winning goal
+    gwg = None
+    if len(teams) == 2 and team_stats[teams[0]]["goals"] != team_stats[teams[1]]["goals"]:
+        winner = max(teams, key=lambda t: team_stats[t]["goals"])
+        loser = min(teams, key=lambda t: team_stats[t]["goals"])
+        losing_goals = team_stats[loser]["goals"]
+        count = 0
+        for team_id, scorer in goal_sequence:
+            if team_id == winner:
+                count += 1
+                if count == losing_goals + 1:
+                    gwg = scorer
+                    break
+    if gwg is not None:
+        summary += f"Game-winning goal: Player {gwg}\n"
+
+    if goals_by_player:
+        max_goals = max(goals_by_player.values())
+        top_goal_players = [pid for pid, g in goals_by_player.items() if g == max_goals]
+        summary += (
+            f"Top goal scorers ({max_goals}): "
+            + ", ".join(f"Player {pid}" for pid in sorted(top_goal_players))
+            + "\n"
+        )
+
+    points_by_player = defaultdict(int)
+    for pid, g in goals_by_player.items():
+        points_by_player[pid] += g
+    for pid, a in assists_by_player.items():
+        points_by_player[pid] += a
+    if points_by_player:
+        max_points = max(points_by_player.values())
+        top_point_players = [pid for pid, p in points_by_player.items() if p == max_points]
+        summary += (
+            f"Top point scorers ({max_points}): "
+            + ", ".join(f"Player {pid}" for pid in sorted(top_point_players))
+            + "\n"
+        )
+
     return summary
