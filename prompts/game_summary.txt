@@ -1,0 +1,7 @@
+You are an expert NHL commentator. Using the structured events below, write a concise and engaging summary of the game.
+
+Events:
+{events}
+
+Summary:
+
