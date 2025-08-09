@@ -15,10 +15,10 @@ def test_generate_summary_team_breakdown():
     summary = generate_summary(events)
 
     assert "Team Comparison" in summary
-    assert "- Goals: 1 - 0" in summary
-    assert "- Shots on goal: 1 - 1" in summary
-    assert "- Penalties: 1 - 0" in summary
-    assert "- Hits: 0 - 1" in summary
+    assert "- Goals (Team 1-Team 2): 1 - 0" in summary
+    assert "- Shots on goal (Team 1-Team 2): 1 - 1" in summary
+    assert "- Penalties (Team 1-Team 2): 1 - 0" in summary
+    assert "- Hits (Team 1-Team 2): 0 - 1" in summary
 
 
 def test_generate_summary_player_info():
