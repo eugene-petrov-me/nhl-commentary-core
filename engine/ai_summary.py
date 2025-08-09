@@ -5,12 +5,14 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import List, Dict
-
-import openai
-
+from dotenv import load_dotenv
+from os import getenv
+from openai import OpenAI
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
+load_dotenv()
+client = OpenAI(api_key=getenv("OPENAI_API_KEY"))
 
 def _load_template(name: str) -> str:
     """Load a text template from the prompts directory."""
@@ -30,12 +32,13 @@ def generate_ai_summary(events: List[Dict]) -> str:
     template = _load_template("game_summary.txt")
     populated = template.format(events=json.dumps(events, indent=2))
 
-    response = openai.ChatCompletion.create(
-        model="gpt-3.5-turbo",
-        messages=[{"role": "user", "content": populated}],
+    response = client.responses.create(
+        model="gpt-5-nano",
+        instructions="Talk like The Hockey Guy.",
+        input=populated,
     )
 
-    return response["choices"][0]["message"]["content"].strip()
+    return response.output_text.strip()
 
 
 __all__ = ["generate_ai_summary"]
