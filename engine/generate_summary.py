@@ -63,10 +63,19 @@ def generate_summary(events: List[Dict]) -> str:
         "delayed_penalties": 0,
     })
 
+    team_names = {}
+
     for event in events:
         team_id = event.get("team_id")
         if team_id is None:
             continue
+        # Track team names for later display
+        name = event.get("team_name")
+        if name:
+            team_names[team_id] = name
+        else:
+            team_names.setdefault(team_id, f"Team {team_id}")
+
         key = stat_keys.get(event["event_type"])
         if key is None:
             continue
@@ -94,16 +103,16 @@ def generate_summary(events: List[Dict]) -> str:
             t1, t2 = teams
             summary += (
                 "Team Comparison:\n"
-                f"- Goals: {team_stats[t1]['goals']} - {team_stats[t2]['goals']}\n"
-                f"- Shots on goal: {team_stats[t1]['shots_on_goal']} - {team_stats[t2]['shots_on_goal']}\n"
-                f"- Penalties: {team_stats[t1]['penalties']} - {team_stats[t2]['penalties']}\n"
-                f"- Hits: {team_stats[t1]['hits']} - {team_stats[t2]['hits']}\n"
-                f"- Faceoffs: {team_stats[t1]['faceoffs']} - {team_stats[t2]['faceoffs']}\n"
-                f"- Blocked shots: {team_stats[t1]['blocked_shots']} - {team_stats[t2]['blocked_shots']}\n"
-                f"- Missed shots: {team_stats[t1]['missed_shots']} - {team_stats[t2]['missed_shots']}\n"
-                f"- Giveaways: {team_stats[t1]['giveaways']} - {team_stats[t2]['giveaways']}\n"
-                f"- Takeaways: {team_stats[t1]['takeaways']} - {team_stats[t2]['takeaways']}\n"
-                f"- Delayed penalties: {team_stats[t1]['delayed_penalties']} - {team_stats[t2]['delayed_penalties']}\n"
+                f"- Goals ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['goals']} - {team_stats[t2]['goals']}\n"
+                f"- Shots on goal ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['shots_on_goal']} - {team_stats[t2]['shots_on_goal']}\n"
+                f"- Penalties ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['penalties']} - {team_stats[t2]['penalties']}\n"
+                f"- Hits ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['hits']} - {team_stats[t2]['hits']}\n"
+                f"- Faceoffs ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['faceoffs']} - {team_stats[t2]['faceoffs']}\n"
+                f"- Blocked shots ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['blocked_shots']} - {team_stats[t2]['blocked_shots']}\n"
+                f"- Missed shots ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['missed_shots']} - {team_stats[t2]['missed_shots']}\n"
+                f"- Giveaways ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['giveaways']} - {team_stats[t2]['giveaways']}\n"
+                f"- Takeaways ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['takeaways']} - {team_stats[t2]['takeaways']}\n"
+                f"- Delayed penalties ({team_names[t1]}-{team_names[t2]}): {team_stats[t1]['delayed_penalties']} - {team_stats[t2]['delayed_penalties']}\n"
             )
         else:
             summary += "Team Breakdown:\n"
@@ -130,12 +139,11 @@ def generate_summary(events: List[Dict]) -> str:
     goal_sequence = []  # (team_id, scorer_id) to determine GWG
     player_names = {}
     player_teams = {}
-    team_names = {}
 
     for event in events:
         team_id = event.get("team_id")
         if team_id is not None:
-            team_name = event.get("team_name") or f"Team {team_id}"
+            team_name = event.get("team_name") or team_names.get(team_id) or f"Team {team_id}"
             team_names[team_id] = team_name
 
         if event["event_type"] == "goal":
