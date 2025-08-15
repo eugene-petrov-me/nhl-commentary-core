@@ -3,7 +3,6 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
-import types
 
 fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
 sys.modules['nhlpy'] = fake_nhlpy

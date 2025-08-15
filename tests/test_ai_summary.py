@@ -21,6 +21,7 @@ def test_generate_ai_summary_includes_events(monkeypatch):
 
     monkeypatch.setattr(ai_summary.client.responses, "create", fake_create)
 
+
     summary = ai_summary.generate_ai_summary(events)
     assert summary == expected
 
@@ -45,4 +46,3 @@ def test_missing_api_key(monkeypatch):
     # Restore for subsequent tests
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
     importlib.reload(ai_summary)
-

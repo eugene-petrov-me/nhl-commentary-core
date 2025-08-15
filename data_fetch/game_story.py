@@ -1,7 +1,10 @@
 from nhlpy import NHLClient
-from typing import Dict, Any
+from typing import Any, Dict
 
-client = NHLClient()
+
+class GameStoryFetchError(Exception):
+    """Raised when fetching a game's story fails."""
+
 
 def get_game_story(game_id: int) -> Dict[str, Any]:
     """Fetch the game story data for a specific NHL game.
@@ -11,5 +14,15 @@ def get_game_story(game_id: int) -> Dict[str, Any]:
 
     Returns:
         Dict[str, Any]: Dictionary containing game story data, including three stars.
+
+    Raises:
+        GameStoryFetchError: If the story data cannot be retrieved.
     """
-    return client.game_center.game_story(game_id=game_id)
+    try:
+        client = NHLClient()
+        return client.game_center.game_story(game_id=game_id)
+    except Exception as exc:  # pragma: no cover - defensive programming
+        raise GameStoryFetchError(
+            f"Failed to fetch game story for game {game_id}: {exc}"
+        ) from exc
+
