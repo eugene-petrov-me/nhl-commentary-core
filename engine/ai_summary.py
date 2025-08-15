@@ -12,7 +12,10 @@ from openai import OpenAI
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
 load_dotenv()
-client = OpenAI(api_key=getenv("OPENAI_API_KEY"))
+api_key = getenv("OPENAI_API_KEY")
+if not api_key:
+    raise RuntimeError("Missing OPENAI_API_KEY environment variable")
+client = OpenAI(api_key=api_key)
 
 def _load_template(name: str) -> str:
     """Load a text template from the prompts directory."""
@@ -32,11 +35,14 @@ def generate_ai_summary(events: List[Dict]) -> str:
     template = _load_template("game_summary.txt")
     populated = template.format(events=json.dumps(events, indent=2))
 
-    response = client.responses.create(
-        model="gpt-5-nano",
-        instructions="Talk like The Hockey Guy.",
-        input=populated,
-    )
+    try:
+        response = client.responses.create(
+            model="gpt-5-nano",
+            instructions="Talk like The Hockey Guy.",
+            input=populated,
+        )
+    except Exception as exc:  # pragma: no cover - upstream exceptions vary
+        raise RuntimeError(f"OpenAI request failed: {exc}") from exc
 
     return response.output_text.strip()
 
