@@ -1,6 +1,8 @@
 import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
+os.environ.setdefault("OPENAI_API_KEY", "test-key")
+
 from engine.summarize_game import summarize_game
 
 
@@ -39,6 +41,7 @@ def test_summarize_game_ai(monkeypatch):
     monkeypatch.setattr("engine.summarize_game.process_game_events", fake_process_game_events)
     monkeypatch.setattr("engine.summarize_game.generate_summary", fake_generate_summary)
     monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate_ai_summary)
+    monkeypatch.setattr("engine.summarize_game.get_play_by_play", lambda game_id: ["event"])
 
     summary = summarize_game(2, use_ai=True)
     assert summary == "ai summary"

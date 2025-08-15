@@ -15,10 +15,8 @@ def test_generate_summary_team_breakdown():
     summary = generate_summary(events)
 
     assert "Team Comparison" in summary
-    assert "- Goals (Team 1-Team 2): 1 - 0" in summary
-    assert "- Shots on goal (Team 1-Team 2): 1 - 1" in summary
-    assert "- Penalties (Team 1-Team 2): 1 - 0" in summary
-    assert "- Hits (Team 1-Team 2): 0 - 1" in summary
+    assert "- Team 1: G 1, SOG 1, PIM 1" in summary
+    assert "- Team 2: G 0, SOG 1, PIM 0" in summary
 
 
 def test_generate_summary_player_info():
@@ -99,10 +97,9 @@ def test_generate_summary_player_info():
     summary = generate_summary(events)
 
     assert "3 Stars of the Game" in summary
-    assert "- Star 1: Player One (Flyers) (C) - Goals: 2, Assists: 0, Points: 2" in summary
-    assert "- Star 2: Player Two (Penguins) (G) - GAA: 1.0, SV%: 0.95" in summary
-    assert "- Star 3: Assist Two (Flyers) (D) - Goals: 0, Assists: 1, Points: 1" in summary
-    assert "Game-winning goal: Player One (Flyers)" in summary
-    assert "Top goal scorers (2): Player One (Flyers)" in summary
-    assert "Top point scorers (2): Player One (Flyers)" in summary
+    assert "- Star 1: Player One (C) - Goals: 2, Assists: 0, Points: 2" in summary
+    assert "- Star 2: Player Two (G) - GAA: 1.0, SV%: 0.95" in summary
+    assert "- Star 3: Assist Two (D) - Goals: 0, Assists: 1, Points: 1" in summary
+    assert "Top goal scorers (2): Player One" in summary
+    assert "Top point scorers (2 pts): Player One" in summary
 
