@@ -57,4 +57,3 @@ Follow the prompts to choose a game and select between AI or rule-based summarie
 
 Contributions are welcome! Please fork the repository, create a feature branch, and open a pull request.
 Feel free to submit issues for bugs or feature suggestions.
-
