@@ -1,4 +1,4 @@
-import sys, os
+import sys, os, types
 sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")

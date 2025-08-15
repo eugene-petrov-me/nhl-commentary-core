@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import List, Dict
+from typing import Dict
 from dotenv import load_dotenv
 from os import getenv
 from openai import OpenAI
@@ -23,17 +23,22 @@ def _load_template(name: str) -> str:
     return path.read_text(encoding="utf-8")
 
 
-def generate_ai_summary(events: List[Dict]) -> str:
+def generate_ai_summary(play_by_play: Dict, game_story: Dict) -> str:
     """Generate a natural language summary for a game.
 
     Args:
-        events (List[Dict]): Structured event data for the game.
+        play_by_play (Dict): Structured play-by-play event data for the game.
+        game_story (Dict): Additional narrative data for the game, including
+            stars and statistics.
 
     Returns:
         str: Summary produced by the AI model.
     """
     template = _load_template("game_summary.txt")
-    populated = template.format(events=json.dumps(events, indent=2))
+    populated = template.format(
+        play_by_play=json.dumps(play_by_play, indent=2),
+        game_story=json.dumps(game_story, indent=2),
+    )
 
     try:
         response = client.responses.create(

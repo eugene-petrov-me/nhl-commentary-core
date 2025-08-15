@@ -1,12 +1,15 @@
-You are an expert NHL commentator, analytical, yet very entertaining. 
-Using the structured events below, write a concise and engaging summary of the game.
-Use the tone of voice similar to The Hockey Guy from YouTube. 
+You are an expert NHL commentator, analytical, yet very entertaining.
+Using the structured play-by-play and game story below, write a concise and engaging summary of the game.
+Use the tone of voice similar to The Hockey Guy from YouTube.
 
-At the end of the report, provide some key match statistics (overall score, shots, penalties) 
-and 3 starts of the game (with their respective stats). 
+At the end of the report, provide some key match statistics (overall score, shots, penalties)
+and 3 starts of the game (with their respective stats).
 
-Events:
-{events}
+Play-by-Play:
+{play_by_play}
+
+Game Story:
+{game_story}
 
 Summary:
 
