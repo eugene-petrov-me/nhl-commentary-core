@@ -6,6 +6,7 @@ class PlayByPlayFetchError(Exception):
     """Raised when fetching play-by-play data fails."""
 
 
+
 def get_play_by_play(game_id: int) -> Dict[str, Any]:
     """Fetch the play-by-play data for a specific NHL game.
 
@@ -18,6 +19,7 @@ def get_play_by_play(game_id: int) -> Dict[str, Any]:
     Raises:
         PlayByPlayFetchError: If the play-by-play data cannot be retrieved.
     """
+ 
     try:
         client = NHLClient()
         return client.game_center.play_by_play(game_id=game_id)
@@ -25,4 +27,3 @@ def get_play_by_play(game_id: int) -> Dict[str, Any]:
         raise PlayByPlayFetchError(
             f"Failed to fetch play-by-play for game {game_id}: {exc}"
         ) from exc
-

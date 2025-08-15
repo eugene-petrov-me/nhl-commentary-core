@@ -1,6 +1,7 @@
 from typing import List, Dict
 from collections import defaultdict
 
+
 def generate_summary(events: List[Dict]) -> str:
     """
     Compact game summary:
@@ -20,49 +21,59 @@ def generate_summary(events: List[Dict]) -> str:
     away_team = metadata.get("away_team") if metadata else {}
 
     GAME_TYPE = {1: "Preseason", 2: "Regular Season", 3: "Playoffs"}
-    game_type = GAME_TYPE.get(metadata.get("game_type") if metadata else None, "Unknown")
-    venue = ", ".join([v for v in [
-        metadata.get("venue") if metadata else None,
-        metadata.get("venue_location") if metadata else None
-    ] if v])
+    game_type = GAME_TYPE.get(
+        metadata.get("game_type") if metadata else None, "Unknown"
+    )
+    venue = ", ".join(
+        [
+            v
+            for v in [
+                metadata.get("venue") if metadata else None,
+                metadata.get("venue_location") if metadata else None,
+            ]
+            if v
+        ]
+    )
 
-    home_id  = home_team.get("id")
-    away_id  = away_team.get("id")
-    home_ab  = home_team.get("abbrev", "HOME")
-    away_ab  = away_team.get("abbrev", "AWY")
+    home_id = home_team.get("id")
+    away_id = away_team.get("id")
+    home_ab = home_team.get("abbrev", "HOME")
+    away_ab = away_team.get("abbrev", "AWY")
 
     # ---------- Team-level aggregation ----------
     stat_keys = {
-        "goal":           "goals",
-        "shot-on-goal":   "shots_on_goal",  # recalculated with period filter below
-        "penalty":        "penalties",
-        "hit":            "hits",
-        "faceoff":        "faceoffs",
-        "blocked-shot":   "blocked_shots",
-        "missed-shot":    "missed_shots",
-        "giveaway":       "giveaways",
-        "takeaway":       "takeaways",
-        "delayed-penalty":"delayed_penalties",
+        "goal": "goals",
+        "shot-on-goal": "shots_on_goal",  # recalculated with period filter below
+        "penalty": "penalties",
+        "hit": "hits",
+        "faceoff": "faceoffs",
+        "blocked-shot": "blocked_shots",
+        "missed-shot": "missed_shots",
+        "giveaway": "giveaways",
+        "takeaway": "takeaways",
+        "delayed-penalty": "delayed_penalties",
     }
 
-    team_stats = defaultdict(lambda: {
-        "goals": 0,            # Reg+OT (we'll enforce by counting only p in 1..4)
-        "shots_on_goal": 0,    # Reg+OT, goals count as SOG
-        "penalties": 0,
-        "hits": 0,
-        "faceoffs": 0,
-        "blocked_shots": 0,
-        "missed_shots": 0,
-        "giveaways": 0,
-        "takeaways": 0,
-        "delayed_penalties": 0,
-    })
+    team_stats = defaultdict(
+        lambda: {
+            "goals": 0,  # Reg+OT (we'll enforce by counting only p in 1..4)
+            "shots_on_goal": 0,  # Reg+OT, goals count as SOG
+            "penalties": 0,
+            "hits": 0,
+            "faceoffs": 0,
+            "blocked_shots": 0,
+            "missed_shots": 0,
+            "giveaways": 0,
+            "takeaways": 0,
+            "delayed_penalties": 0,
+        }
+    )
 
     # Tally per-team with correct period filters
     for e in events:
         etype = e.get("event_type")
-        tid   = e.get("team_id")
-        per   = e.get("period")
+        tid = e.get("team_id")
+        per = e.get("period")
 
         if tid is None:
             continue
@@ -84,7 +95,12 @@ def generate_summary(events: List[Dict]) -> str:
     # Default no suffix
     win_type = ""
 
-    if home_team.get("score") is not None and away_team.get("score") is not None and home_id in team_stats and away_id in team_stats:
+    if (
+        home_team.get("score") is not None
+        and away_team.get("score") is not None
+        and home_id in team_stats
+        and away_id in team_stats
+    ):
         final_home = home_team["score"]
         final_away = away_team["score"]
 
@@ -96,9 +112,23 @@ def generate_summary(events: List[Dict]) -> str:
                 # Decided in regulation (or in OT but your event goals counted already)
                 # To be precise: if there was a goal in period 4 and totals differ at that point, it's OT.
                 # We'll explicitly check for any period-4 goal to label OT when Reg-only tie existed.
-                reg_tie = sum(1 for e in events if e.get("event_type") == "goal" and e.get("period") in (1,2,3) and e.get("team_id") == home_id) == \
-                          sum(1 for e in events if e.get("event_type") == "goal" and e.get("period") in (1,2,3) and e.get("team_id") == away_id)
-                ot_goal_happened = any(e.get("event_type") == "goal" and e.get("period") == 4 for e in events)
+                reg_tie = sum(
+                    1
+                    for e in events
+                    if e.get("event_type") == "goal"
+                    and e.get("period") in (1, 2, 3)
+                    and e.get("team_id") == home_id
+                ) == sum(
+                    1
+                    for e in events
+                    if e.get("event_type") == "goal"
+                    and e.get("period") in (1, 2, 3)
+                    and e.get("team_id") == away_id
+                )
+                ot_goal_happened = any(
+                    e.get("event_type") == "goal" and e.get("period") == 4
+                    for e in events
+                )
                 if reg_tie and ot_goal_happened:
                     win_type = "(OT)"
                 else:
@@ -116,47 +146,85 @@ def generate_summary(events: List[Dict]) -> str:
         lines.append(f"Venue: {venue}")
     lines.append(f"{away_ab} @ {home_ab}")
     if away_team.get("score") is not None and home_team.get("score") is not None:
-        lines.append(f"Final Score: {away_team['score']} - {home_team['score']} {win_type}".strip())
+        lines.append(
+            f"Final Score: {away_team['score']} - {home_team['score']} {win_type}".strip()
+        )
     lines.append("------------------")
 
     # ---------- Team Comparison (Away–Home order) ----------
     if away_id in team_stats and home_id in team_stats:
         A, H = away_id, home_id
         lines.append("Team Comparison:")
-        lines.append(f"- Goals ({away_ab}-{home_ab}): {team_stats[A]['goals']} - {team_stats[H]['goals']}")
-        lines.append(f"- Shots on goal ({away_ab}-{home_ab}): {team_stats[A]['shots_on_goal']} - {team_stats[H]['shots_on_goal']}")
-        lines.append(f"- Penalties ({away_ab}-{home_ab}): {team_stats[A]['penalties']} - {team_stats[H]['penalties']}")
-        lines.append(f"- Hits ({away_ab}-{home_ab}): {team_stats[A]['hits']} - {team_stats[H]['hits']}")
-        lines.append(f"- Faceoffs ({away_ab}-{home_ab}): {team_stats[A]['faceoffs']} - {team_stats[H]['faceoffs']}")
-        lines.append(f"- Blocked shots ({away_ab}-{home_ab}): {team_stats[A]['blocked_shots']} - {team_stats[H]['blocked_shots']}")
-        lines.append(f"- Missed shots ({away_ab}-{home_ab}): {team_stats[A]['missed_shots']} - {team_stats[H]['missed_shots']}")
-        lines.append(f"- Giveaways ({away_ab}-{home_ab}): {team_stats[A]['giveaways']} - {team_stats[H]['giveaways']}")
-        lines.append(f"- Takeaways ({away_ab}-{home_ab}): {team_stats[A]['takeaways']} - {team_stats[H]['takeaways']}")
-        lines.append(f"- Delayed penalties ({away_ab}-{home_ab}): {team_stats[A]['delayed_penalties']} - {team_stats[H]['delayed_penalties']}")
+        lines.append(
+            f"- Goals ({away_ab}-{home_ab}): {team_stats[A]['goals']} - {team_stats[H]['goals']}"
+        )
+        lines.append(
+            f"- Shots on goal ({away_ab}-{home_ab}): {team_stats[A]['shots_on_goal']} - {team_stats[H]['shots_on_goal']}"
+        )
+        lines.append(
+            f"- Penalties ({away_ab}-{home_ab}): {team_stats[A]['penalties']} - {team_stats[H]['penalties']}"
+        )
+        lines.append(
+            f"- Hits ({away_ab}-{home_ab}): {team_stats[A]['hits']} - {team_stats[H]['hits']}"
+        )
+        lines.append(
+            f"- Faceoffs ({away_ab}-{home_ab}): {team_stats[A]['faceoffs']} - {team_stats[H]['faceoffs']}"
+        )
+        lines.append(
+            f"- Blocked shots ({away_ab}-{home_ab}): {team_stats[A]['blocked_shots']} - {team_stats[H]['blocked_shots']}"
+        )
+        lines.append(
+            f"- Missed shots ({away_ab}-{home_ab}): {team_stats[A]['missed_shots']} - {team_stats[H]['missed_shots']}"
+        )
+        lines.append(
+            f"- Giveaways ({away_ab}-{home_ab}): {team_stats[A]['giveaways']} - {team_stats[H]['giveaways']}"
+        )
+        lines.append(
+            f"- Takeaways ({away_ab}-{home_ab}): {team_stats[A]['takeaways']} - {team_stats[H]['takeaways']}"
+        )
+        lines.append(
+            f"- Delayed penalties ({away_ab}-{home_ab}): {team_stats[A]['delayed_penalties']} - {team_stats[H]['delayed_penalties']}"
+        )
     else:
         # Fallback if metadata missing: list whatever teams we saw
         if team_stats:
             lines.append("Team Comparison:")
             for tid, s in team_stats.items():
                 tag = f"Team {tid}"
-                lines.append(f"- {tag}: G {s['goals']}, SOG {s['shots_on_goal']}, PIM {s['penalties']}")
+                lines.append(
+                    f"- {tag}: G {s['goals']}, SOG {s['shots_on_goal']}, PIM {s['penalties']}"
+                )
 
     summary = "\n".join(lines) + "\n"
 
     # ---------- Stars & Leaders ----------
     stars = {}
-    goals_by_player   = defaultdict(int)
+    goals_by_player = defaultdict(int)
     assists_by_player = defaultdict(int)
     player_names = {}
     player_teams = {}
+    team_names = {}
+    scores = defaultdict(int)
+    current_leader = None
+    game_winner = None
+
+    # Seed team name mapping with metadata abbreviations when available
+    if home_id is not None:
+        team_names[home_id] = home_ab
+    if away_id is not None:
+        team_names[away_id] = away_ab
 
     for e in events:
         etype = e.get("event_type")
-        tid   = e.get("team_id")
+        tid = e.get("team_id")
+
+        team_nm = e.get("team_name")
+        if tid is not None and team_nm:
+            team_names.setdefault(tid, team_nm)
 
         if etype == "goal":
             players = e.get("players") or {}
-            scorer  = players.get("scorer_id")
+            scorer = players.get("scorer_id")
             if scorer is not None:
                 goals_by_player[scorer] += 1
                 if tid is not None:
@@ -165,19 +233,42 @@ def generate_summary(events: List[Dict]) -> str:
                 if nm:
                     player_names[scorer] = nm
 
-            for aid in (players.get("assist_ids") or []):
+            for aid in players.get("assist_ids") or []:
                 if aid is not None:
                     assists_by_player[aid] += 1
                     if tid is not None:
                         player_teams[aid] = tid
-            for aid, nm in zip(players.get("assist_ids") or [], players.get("assist_names") or []):
+            for aid, nm in zip(
+                players.get("assist_ids") or [], players.get("assist_names") or []
+            ):
                 if aid is not None and nm:
                     player_names[aid] = nm
 
+            if tid is not None:
+                scores[tid] += 1
+                ids = list(scores.keys())
+                if len(ids) == 2:
+                    t0, t1 = ids[0], ids[1]
+                    if scores[t0] > scores[t1]:
+                        new_leader = t0
+                    elif scores[t1] > scores[t0]:
+                        new_leader = t1
+                    else:
+                        new_leader = None
+                else:
+                    new_leader = tid if scores[tid] > 0 else None
+
+                if new_leader != current_leader and new_leader is not None:
+                    if scorer is not None:
+                        game_winner = {"player_id": scorer, "team_id": tid}
+                    else:
+                        game_winner = {"player_id": None, "team_id": tid}
+                current_leader = new_leader
+
         elif etype == "star":
             rank = e.get("star")
-            p    = e.get("players") or {}
-            pid  = p.get("player_id")
+            p = e.get("players") or {}
+            pid = p.get("player_id")
             if rank is not None and pid is not None:
                 stars[rank] = {
                     "id": pid,
@@ -193,6 +284,8 @@ def generate_summary(events: List[Dict]) -> str:
     def fmt_player(pid: int) -> str:
         nm = player_names.get(pid, f"Player {pid}")
         tid = player_teams.get(pid)
+        if tid in team_names:
+            return f"{nm} ({team_names[tid]})"
         if tid == home_id:
             return f"{nm} ({home_ab})"
         if tid == away_id:
@@ -224,10 +317,19 @@ def generate_summary(events: List[Dict]) -> str:
                 line += " - " + ", ".join(parts)
             summary += line + "\n"
 
+    if game_winner and game_winner.get("player_id") is not None:
+        summary += f"Game-winning goal: {fmt_player(game_winner['player_id'])}\n"
+
     if goals_by_player:
         max_g = max(goals_by_player.values())
         leaders = [pid for pid, g in goals_by_player.items() if g == max_g]
-        summary += "Top goal scorers (" + str(max_g) + "): " + ", ".join(fmt_player(pid) for pid in sorted(leaders)) + "\n"
+        summary += (
+            "Top goal scorers ("
+            + str(max_g)
+            + "): "
+            + ", ".join(fmt_player(pid) for pid in sorted(leaders))
+            + "\n"
+        )
 
     points_by_player = defaultdict(int)
     for pid, g in goals_by_player.items():
@@ -237,6 +339,12 @@ def generate_summary(events: List[Dict]) -> str:
     if points_by_player:
         max_p = max(points_by_player.values())
         leaders = [pid for pid, p in points_by_player.items() if p == max_p]
-        summary += "Top point scorers (" + str(max_p) + " pts): " + ", ".join(fmt_player(pid) for pid in sorted(leaders)) + "\n"
+        summary += (
+            "Top point scorers ("
+            + str(max_p)
+            + " pts): "
+            + ", ".join(fmt_player(pid) for pid in sorted(leaders))
+            + "\n"
+        )
 
     return summary
