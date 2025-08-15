@@ -149,10 +149,24 @@ def generate_summary(events: List[Dict]) -> str:
     assists_by_player = defaultdict(int)
     player_names = {}
     player_teams = {}
+    team_names = {}
+    scores = defaultdict(int)
+    current_leader = None
+    game_winner = None
+
+    # Seed team name mapping with metadata abbreviations when available
+    if home_id is not None:
+        team_names[home_id] = home_ab
+    if away_id is not None:
+        team_names[away_id] = away_ab
 
     for e in events:
         etype = e.get("event_type")
         tid   = e.get("team_id")
+
+        team_nm = e.get("team_name")
+        if tid is not None and team_nm:
+            team_names.setdefault(tid, team_nm)
 
         if etype == "goal":
             players = e.get("players") or {}
@@ -174,6 +188,27 @@ def generate_summary(events: List[Dict]) -> str:
                 if aid is not None and nm:
                     player_names[aid] = nm
 
+            if tid is not None:
+                scores[tid] += 1
+                ids = list(scores.keys())
+                if len(ids) == 2:
+                    t0, t1 = ids[0], ids[1]
+                    if scores[t0] > scores[t1]:
+                        new_leader = t0
+                    elif scores[t1] > scores[t0]:
+                        new_leader = t1
+                    else:
+                        new_leader = None
+                else:
+                    new_leader = tid if scores[tid] > 0 else None
+
+                if new_leader != current_leader and new_leader is not None:
+                    if scorer is not None:
+                        game_winner = {"player_id": scorer, "team_id": tid}
+                    else:
+                        game_winner = {"player_id": None, "team_id": tid}
+                current_leader = new_leader
+
         elif etype == "star":
             rank = e.get("star")
             p    = e.get("players") or {}
@@ -193,6 +228,8 @@ def generate_summary(events: List[Dict]) -> str:
     def fmt_player(pid: int) -> str:
         nm = player_names.get(pid, f"Player {pid}")
         tid = player_teams.get(pid)
+        if tid in team_names:
+            return f"{nm} ({team_names[tid]})"
         if tid == home_id:
             return f"{nm} ({home_ab})"
         if tid == away_id:
@@ -223,6 +260,9 @@ def generate_summary(events: List[Dict]) -> str:
             if parts:
                 line += " - " + ", ".join(parts)
             summary += line + "\n"
+
+    if game_winner and game_winner.get("player_id") is not None:
+        summary += f"Game-winning goal: {fmt_player(game_winner['player_id'])}\n"
 
     if goals_by_player:
         max_g = max(goals_by_player.values())
