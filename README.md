@@ -42,3 +42,19 @@ NHL_API_BASE=https://api.nhle.com/stats/rest/
 ```bash
 pip install -r requirements.txt
 ```
+
+## 🚀 Usage
+
+Run the CLI to summarize a game:
+
+```bash
+python main.py
+```
+
+Follow the prompts to choose a game and select between AI or rule-based summaries.
+
+## 🤝 Contributing
+
+Contributions are welcome! Please fork the repository, create a feature branch, and open a pull request.
+Feel free to submit issues for bugs or feature suggestions.
+
