@@ -1,5 +1,5 @@
-from data_fetch.play_by_play import get_play_by_play
-from data_fetch.game_story import get_game_story
+from data_fetch import get_play_by_play
+from data_fetch import get_game_story
 from engine.transform import transform_event
 from typing import List, Dict, Any
 
@@ -86,5 +86,32 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
                 },
             }
         )
+
+    game_metadata = {
+        "event_type": "metadata",
+        "game_id": game_id,
+        "game_type": story.get("gameType"),
+        "venue": story.get("venue", {}).get("default"),
+        "venue_location": story.get("venueLocation", {}).get("default"),
+        "home_team": {
+            "id": story.get("homeTeam", {}).get("id"),
+            "name": (story.get("homeTeam", {}).get("name") or {}).get("default"),
+            "abbrev": story.get("homeTeam", {}).get("abbrev"),
+            "place_name": (story.get("homeTeam", {}).get("placeName") or {}).get("default"),
+            "score": story.get("homeTeam", {}).get("score"),
+            "sog": story.get("homeTeam", {}).get("sog"),
+            "logo": story.get("homeTeam", {}).get("logo"),
+        },
+        "away_team": {
+            "id": story.get("awayTeam", {}).get("id"),
+            "name": (story.get("awayTeam", {}).get("name") or {}).get("default"),
+            "abbrev": story.get("awayTeam", {}).get("abbrev"),
+            "place_name": (story.get("awayTeam", {}).get("placeName") or {}).get("default"),
+            "score": story.get("awayTeam", {}).get("score"),
+            "sog": story.get("awayTeam", {}).get("sog"),
+            "logo": story.get("awayTeam", {}).get("logo"),
+        },
+    }
+    transformed_events.append(game_metadata)
 
     return transformed_events
