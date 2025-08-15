@@ -3,6 +3,7 @@ from typing import Dict, Any
 
 client = NHLClient()
 
+
 def get_play_by_play(game_id: int) -> Dict[str, Any]:
     """
     Fetch the play-by-play data for a specific NHL game.
