@@ -1,5 +1,5 @@
-from data_fetch import get_play_by_play
-from data_fetch import get_game_story
+from data_fetch.play_by_play import get_play_by_play
+from data_fetch.game_story import get_game_story
 from engine.transform import transform_event
 from typing import List, Dict, Any
 

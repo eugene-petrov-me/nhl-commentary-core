@@ -1,32 +1,56 @@
+import json
 import os
+from typing import Any, Dict
 from google.cloud import storage
+from google.api_core.exceptions import NotFound
 
-def upload_to_gcs(bucket_name: str, source_file: str, destination_blob: str) -> None:
+def _make_client() -> storage.Client:
     """
-    Upload a local file to a Google Cloud Storage bucket.
-    
-    Args:
-        bucket_name (str): The name of the bucket.
-        source_file (str): Path to the file to upload.
-        destination_blob (str): Destination path in the bucket.
+    Prefer explicit SA JSON if GOOGLE_APPLICATION_CREDENTIALS is set and valid.
+    Otherwise fall back to ADC (works locally after `gcloud auth application-default login`
+    and in GCP runtimes like Cloud Run when a service account is attached).
     """
-    if not source_file or not os.path.isfile(source_file):
-        raise FileNotFoundError(f"Source file does not exist: {source_file}")
+    cred_path = os.getenv("GOOGLE_APPLICATION_CREDENTIALS")
+    if cred_path and os.path.isfile(cred_path):
+        return storage.Client.from_service_account_json(cred_path)
+    return storage.Client()  # ADC
 
-    client = storage.Client()
-    bucket = client.bucket(bucket_name)
+_client: storage.Client = _make_client()
 
-    # Check if bucket exists (no extra API calls if bucket is known)
-    if not bucket.exists():
-        print(f"Bucket {bucket_name} doesn't exist. Creating it.")
-        client.create_bucket(bucket_name)
-        print(f"Bucket {bucket_name} created.")
+def _get_bucket(bucket_name: str) -> storage.Bucket:
+    return _client.bucket(bucket_name)
 
-    blob = bucket.blob(destination_blob)
-
+def check_file_exists(bucket_name: str, blob_name: str) -> bool:
+    bucket = _get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
     try:
-        blob.upload_from_filename(source_file)
-        print(f"✅ Uploaded {source_file} → gs://{bucket_name}/{destination_blob}")
-    except Exception as e:
-        print(f"❌ Failed to upload {source_file} → {destination_blob}: {e}")
-        raise
+        return blob.exists()
+    except NotFound:
+        return False
+
+def download_json(bucket_name: str, blob_name: str) -> Dict[str, Any]:
+    bucket = _get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    text = blob.download_as_text()  # raises if missing; let caller handle
+    return json.loads(text)
+
+def upload_json(bucket_name: str, blob_name: str, payload: Any) -> None:
+    bucket = _get_bucket(bucket_name)
+    # Best practice: don't auto-create buckets here. Assume infra created outside.
+    blob = bucket.blob(blob_name)
+    blob.upload_from_string(
+        data=json.dumps(payload, ensure_ascii=False, indent=2),
+        content_type="application/json",
+    )
+    print(f"✅ Uploaded JSON → gs://{bucket_name}/{blob_name}")
+
+def download_text(bucket_name: str, blob_name: str) -> str:
+    bucket = _get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    return blob.download_as_text()
+
+def upload_text(bucket_name: str, blob_name: str, text: str, content_type: str = "text/plain") -> None:
+    bucket = _get_bucket(bucket_name)
+    blob = bucket.blob(blob_name)
+    blob.upload_from_string(data=text, content_type=content_type)
+    print(f"✅ Uploaded text → gs://{bucket_name}/{blob_name}")
