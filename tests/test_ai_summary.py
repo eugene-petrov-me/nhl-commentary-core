@@ -3,12 +3,37 @@ from types import SimpleNamespace
 
 import pytest
 
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
-
 # Ensure module can import without hitting the network
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
-import engine.ai_summary as ai_summary
+fake_nhlpy = SimpleNamespace(NHLClient=lambda: SimpleNamespace())
+sys.modules['nhlpy'] = fake_nhlpy
+
+class _FakeStorageClient:
+    @classmethod
+    def from_service_account_json(cls, *args, **kwargs):
+        return cls()
+
+    def bucket(self, *args, **kwargs):
+        return SimpleNamespace(
+            blob=lambda *a, **kw: SimpleNamespace(
+                exists=lambda: False,
+                download_as_text=lambda: "",
+                upload_from_string=lambda *a, **kw: None,
+            )
+        )
+
+fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
+fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_google_cloud = SimpleNamespace(storage=fake_storage)
+fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
+sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault("google.cloud", fake_google_cloud)
+sys.modules.setdefault("google.cloud.storage", fake_storage)
+sys.modules.setdefault("google.api_core", fake_google_api_core)
+sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+
+import engine.ai_summary
 
 
 def test_generate_ai_summary_includes_payloads(monkeypatch):
@@ -22,10 +47,10 @@ def test_generate_ai_summary_includes_payloads(monkeypatch):
         assert "Player One" in input_payload
         return SimpleNamespace(output_text=expected)
 
-    monkeypatch.setattr(ai_summary.client.responses, "create", fake_create)
+    monkeypatch.setattr(engine.ai_summary.client.responses, "create", fake_create)
 
 
-    summary = ai_summary.generate_ai_summary(play_by_play, game_story)
+    summary = engine.ai_summary.generate_ai_summary(play_by_play, game_story)
     assert summary == expected
 
 
@@ -36,17 +61,17 @@ def test_generate_ai_summary_handles_error(monkeypatch):
     def fake_create(*args, **kwargs):
         raise Exception("boom")
 
-    monkeypatch.setattr(ai_summary.client.responses, "create", fake_create)
+    monkeypatch.setattr(engine.ai_summary.client.responses, "create", fake_create)
 
     with pytest.raises(RuntimeError, match="boom"):
-        ai_summary.generate_ai_summary(play_by_play, game_story)
+        engine.ai_summary.generate_ai_summary(play_by_play, game_story)
 
 
 def test_missing_api_key(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     with pytest.raises(RuntimeError):
-        importlib.reload(ai_summary)
+        importlib.reload(engine.ai_summary)
 
     # Restore for subsequent tests
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    importlib.reload(ai_summary)
+    importlib.reload(engine.ai_summary)
