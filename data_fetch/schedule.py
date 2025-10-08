@@ -1,12 +1,18 @@
-from nhlpy import NHLClient
+import logging
 from typing import List, Optional
+
+from nhlpy import NHLClient
+
+from config import get_settings
 from models.game_schedule import GameSchedule
 
 # Optional: only if you want to prefill the date index
 try:
     from engine.date_index import mark_artifact  # your simple index helper
-except Exception:
-    mark_artifact = None  # keeps this import optional
+except Exception:  # pragma: no cover - optional dependency
+    mark_artifact = None  # type: ignore[assignment]
+
+logger = logging.getLogger(__name__)
 
 class ScheduleFetchError(Exception):
     """Raised when fetching the schedule fails."""
@@ -60,11 +66,16 @@ def get_schedule(
     ]
 
     # Seed the simple per-date index with matchups (no artifacts yet)
-    if mark_index and bucket_name and mark_artifact is not None:
+    if mark_index:
+        bucket = bucket_name or get_settings().gcs_bucket_name
+    else:
+        bucket = None
+
+    if mark_index and bucket and mark_artifact is not None:
         for s in schedules:
             try:
                 mark_artifact(
-                    bucket_name,
+                    bucket,
                     date=date,
                     game_id=s.game_id,
                     away=s.away_team,
@@ -75,7 +86,7 @@ def get_schedule(
                 # Also ensure 'raw_story' key exists (False) so your
                 # list_games_missing(...) works immediately.
                 mark_artifact(
-                    bucket_name,
+                    bucket,
                     date=date,
                     game_id=s.game_id,
                     artifact="raw_story",
@@ -83,6 +94,8 @@ def get_schedule(
                 )
             except Exception:
                 # Non-fatal; schedule fetch should not fail due to index writes
-                pass
+                logger.warning(
+                    "Failed to seed index for game %s on %s", s.game_id, date, exc_info=True
+                )
 
     return schedules
