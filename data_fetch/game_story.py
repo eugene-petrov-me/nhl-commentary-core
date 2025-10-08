@@ -1,15 +1,21 @@
-from nhlpy import NHLClient
+import logging
 from typing import Any, Dict, Optional, Tuple
-from gcp_ingestion import check_file_exists, download_json, upload_json
-from engine.date_index import mark_artifact
-from dotenv import load_dotenv
-from os import getenv
 
-# Load environment variables
-load_dotenv()
-bucket_name = getenv("GCS_BUCKET_NAME", "nhl-commentary-bucket")
-if not bucket_name:
-    raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
+from nhlpy import NHLClient
+
+from config import get_settings
+from gcp_ingestion import check_file_exists, download_json, upload_json
+
+try:  # engine module may not be available in all runtimes
+    from engine.date_index import mark_artifact
+except Exception:  # pragma: no cover - optional dependency
+    mark_artifact = None  # type: ignore[assignment]
+
+logger = logging.getLogger(__name__)
+
+
+def _bucket_name() -> str:
+    return get_settings().gcs_bucket_name
 
 GS_BLOB = "raw/game_story/{game_id}.json"
 
@@ -66,13 +72,21 @@ def _maybe_mark_index(story: Dict[str, Any],
     a, h = _infer_abbrs(story)
     away = away_abbr or a
     home = home_abbr or h
-    if d:
+    if d and mark_artifact:
         try:
-            mark_artifact(bucket_name, date=d, game_id=game_id,
-                          away=away, home=home,
-                          artifact="raw_story", exists=True)
+            mark_artifact(
+                _bucket_name(),
+                date=d,
+                game_id=game_id,
+                away=away,
+                home=home,
+                artifact="raw_story",
+                exists=True,
+            )
         except Exception:
-            pass  # index is convenience only
+            logger.warning(
+                "Failed to mark raw_story index for game %s on %s", game_id, d, exc_info=True
+            )
 
 
 def get_game_story(
@@ -101,11 +115,12 @@ def get_game_story(
         GameStoryFetchError: On retrieval/validation errors.
     """
     blob_path = GS_BLOB.format(game_id=game_id)
+    bucket = _bucket_name()
 
     # 1) Cache
-    if not force_refresh and check_file_exists(bucket_name, blob_path):
+    if not force_refresh and check_file_exists(bucket, blob_path):
         try:
-            cached = download_json(bucket_name, blob_path)
+            cached = download_json(bucket, blob_path)
             if _looks_like_gs(cached):
                 _maybe_mark_index(cached, game_id=game_id,
                                   date=date, away_abbr=away_abbr, home_abbr=home_abbr,
@@ -130,9 +145,11 @@ def get_game_story(
 
         # 3) Best-effort cache write
         try:
-            upload_json(bucket_name, blob_path, story)
+            upload_json(bucket, blob_path, story)
         except Exception:
-            pass
+            logger.warning(
+                "Failed to upload game story cache for game %s", game_id, exc_info=True
+            )
 
         _maybe_mark_index(story, game_id=game_id,
                           date=date, away_abbr=away_abbr, home_abbr=home_abbr,

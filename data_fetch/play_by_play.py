@@ -1,15 +1,21 @@
-from nhlpy import NHLClient
+import logging
 from typing import Any, Dict, Optional, Tuple
-from gcp_ingestion import check_file_exists, download_json, upload_json
-from engine.date_index import mark_artifact  # <-- add this import
-from dotenv import load_dotenv
-from os import getenv
 
-# Load environment variables
-load_dotenv()
-bucket_name = getenv("GCS_BUCKET_NAME", "nhl-commentary-bucket")
-if not bucket_name:
-    raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
+from nhlpy import NHLClient
+
+from config import get_settings
+from gcp_ingestion import check_file_exists, download_json, upload_json
+
+try:  # engine is optional in some environments (e.g. tests)
+    from engine.date_index import mark_artifact
+except Exception:  # pragma: no cover - optional dependency
+    mark_artifact = None  # type: ignore[assignment]
+
+logger = logging.getLogger(__name__)
+
+
+def _bucket_name() -> str:
+    return get_settings().gcs_bucket_name
 
 PBP_BLOB = "raw/play_by_play/{game_id}.json"
 
@@ -51,14 +57,21 @@ def _maybe_mark_index(pbp: Dict[str, Any],
     a, h = _infer_abbrs(pbp)
     away = away_abbr or a
     home = home_abbr or h
-    if d:
+    if d and mark_artifact:
         try:
-            mark_artifact(bucket_name, date=d, game_id=game_id,
-                          away=away, home=home,
-                          artifact="raw_pbp", exists=True)
+            mark_artifact(
+                _bucket_name(),
+                date=d,
+                game_id=game_id,
+                away=away,
+                home=home,
+                artifact="raw_pbp",
+                exists=True,
+            )
         except Exception:
-            # Non-fatal; index is a convenience
-            pass
+            logger.warning(
+                "Failed to mark raw_pbp index for game %s on %s", game_id, d, exc_info=True
+            )
 
 def get_play_by_play(
     game_id: int,
@@ -74,10 +87,11 @@ def get_play_by_play(
     Optionally updates a per-date index with a 'raw_pbp' flag.
     """
     blob_path = PBP_BLOB.format(game_id=game_id)
+    bucket = _bucket_name()
 
     # 1) Cache
-    if not force_refresh and check_file_exists(bucket_name, blob_path):
-        pbp = download_json(bucket_name, blob_path)
+    if not force_refresh and check_file_exists(bucket, blob_path):
+        pbp = download_json(bucket, blob_path)
         if _looks_like_pbp(pbp):
             _maybe_mark_index(pbp, game_id=game_id,
                               date=date, away_abbr=away_abbr, home_abbr=home_abbr,
@@ -100,9 +114,11 @@ def get_play_by_play(
 
         # 3) Best-effort cache write
         try:
-            upload_json(bucket_name, blob_path, pbp)
+            upload_json(bucket, blob_path, pbp)
         except Exception:
-            pass
+            logger.warning(
+                "Failed to upload play-by-play cache for game %s", game_id, exc_info=True
+            )
 
         _maybe_mark_index(pbp, game_id=game_id,
                           date=date, away_abbr=away_abbr, home_abbr=home_abbr,
