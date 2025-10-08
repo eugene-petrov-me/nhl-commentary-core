@@ -11,7 +11,6 @@ bucket_name = getenv("GCS_BUCKET_NAME", "nhl-commentary-bucket")
 if not bucket_name:
     raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
 
-_client = NHLClient()
 PBP_BLOB = "raw/play_by_play/{game_id}.json"
 
 class PlayByPlayFetchError(Exception):
@@ -88,7 +87,12 @@ def get_play_by_play(
 
     # 2) API fetch
     try:
-        pbp = _client.game_center.play_by_play(game_id=game_id)
+        client = NHLClient()
+    except Exception as exc:  # pragma: no cover - defensive programming
+        raise PlayByPlayFetchError(f"Failed to create NHL client: {exc}") from exc
+
+    try:
+        pbp = client.game_center.play_by_play(game_id=game_id)
         if not _looks_like_pbp(pbp):
             raise PlayByPlayFetchError(
                 f"Unexpected PBP shape for game {game_id}: missing 'plays'."

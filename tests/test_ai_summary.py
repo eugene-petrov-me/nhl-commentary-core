@@ -8,6 +8,18 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 # Ensure module can import without hitting the network
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
+fake_nhlpy = SimpleNamespace(NHLClient=lambda: SimpleNamespace())
+sys.modules['nhlpy'] = fake_nhlpy
+
+fake_gcp = SimpleNamespace(
+    check_file_exists=lambda *a, **k: False,
+    download_json=lambda *a, **k: {},
+    upload_json=lambda *a, **k: None,
+    upload_text=lambda *a, **k: None,
+    download_text=lambda *a, **k: "",
+)
+sys.modules['gcp_ingestion'] = fake_gcp
+
 import engine.ai_summary as ai_summary
 
 

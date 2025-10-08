@@ -3,9 +3,17 @@ sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
-
 fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
 sys.modules['nhlpy'] = fake_nhlpy
+
+fake_gcp = types.SimpleNamespace(
+    check_file_exists=lambda *a, **k: False,
+    download_json=lambda *a, **k: {},
+    upload_json=lambda *a, **k: None,
+    upload_text=lambda *a, **k: None,
+    download_text=lambda *a, **k: "",
+)
+sys.modules['gcp_ingestion'] = fake_gcp
 
 from engine.process_game import process_game_events
 

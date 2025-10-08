@@ -12,7 +12,6 @@ if not bucket_name:
     raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
 
 GS_BLOB = "raw/game_story/{game_id}.json"
-_client = NHLClient()
 
 
 class GameStoryFetchError(Exception):
@@ -118,7 +117,12 @@ def get_game_story(
 
     # 2) API
     try:
-        story = _client.game_center.game_story(game_id=game_id)
+        client = NHLClient()
+    except Exception as exc:  # pragma: no cover - defensive programming
+        raise GameStoryFetchError(f"Failed to create NHL client: {exc}") from exc
+
+    try:
+        story = client.game_center.game_story(game_id=game_id)
         if not _looks_like_gs(story):
             raise GameStoryFetchError(
                 f"Unexpected game story shape for game {game_id}: missing 'summary'."
