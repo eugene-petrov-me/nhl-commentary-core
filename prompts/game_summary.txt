@@ -3,7 +3,7 @@ Using the structured play-by-play and game story below, write a concise and enga
 Use the tone of voice similar to The Hockey Guy from YouTube.
 
 At the end of the report, provide some key match statistics (overall score, shots, penalties)
-and 3 starts of the game (with their respective stats).
+and 3 stars of the game (with their respective stats).
 
 Play-by-Play:
 {play_by_play}

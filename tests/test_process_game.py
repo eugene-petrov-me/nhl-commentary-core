@@ -1,21 +1,35 @@
 import sys, os, types
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
 fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
 sys.modules['nhlpy'] = fake_nhlpy
 
-fake_gcp = types.SimpleNamespace(
-    check_file_exists=lambda *a, **k: False,
-    download_json=lambda *a, **k: {},
-    upload_json=lambda *a, **k: None,
-    upload_text=lambda *a, **k: None,
-    download_text=lambda *a, **k: "",
-)
-sys.modules['gcp_ingestion'] = fake_gcp
+class _FakeStorageClient:
+    @classmethod
+    def from_service_account_json(cls, *args, **kwargs):
+        return cls()
 
-from engine.process_game import process_game_events
+    def bucket(self, *args, **kwargs):
+        return types.SimpleNamespace(
+            blob=lambda *a, **kw: types.SimpleNamespace(
+                exists=lambda: False,
+                download_as_text=lambda: "",
+                upload_from_string=lambda *a, **kw: None,
+            )
+        )
+
+fake_storage = types.SimpleNamespace(Client=_FakeStorageClient, Bucket=types.SimpleNamespace)
+fake_exceptions = types.SimpleNamespace(NotFound=Exception)
+fake_google_cloud = types.SimpleNamespace(storage=fake_storage)
+fake_google_api_core = types.SimpleNamespace(exceptions=fake_exceptions)
+sys.modules.setdefault("google", types.SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault("google.cloud", fake_google_cloud)
+sys.modules.setdefault("google.cloud.storage", fake_storage)
+sys.modules.setdefault("google.api_core", fake_google_api_core)
+sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+
+import engine.process_game
 
 
 def test_process_game_events_adds_three_stars(monkeypatch):
@@ -54,7 +68,7 @@ def test_process_game_events_adds_three_stars(monkeypatch):
     monkeypatch.setattr("engine.process_game.get_play_by_play", fake_get_play_by_play)
     monkeypatch.setattr("engine.process_game.get_game_story", fake_get_game_story)
 
-    events = process_game_events(123)
+    events = engine.process_game.process_game_events(123)
     assert {
         "event_type": "star",
         "star": 1,
@@ -101,7 +115,7 @@ def test_process_game_events_adds_goal_names(monkeypatch):
     monkeypatch.setattr("engine.process_game.get_play_by_play", fake_get_play_by_play)
     monkeypatch.setattr("engine.process_game.get_game_story", fake_get_game_story)
 
-    events = process_game_events(456)
+    events = engine.process_game.process_game_events(456)
     goal_event = events[0]
     players = goal_event["players"]
     assert players["scorer_name"] == "John Doe"
