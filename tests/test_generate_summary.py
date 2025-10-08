@@ -1,4 +1,35 @@
-from engine.generate_summary import generate_summary
+import sys, os, types
+
+os.environ.setdefault("OPENAI_API_KEY", "test-key")
+
+fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
+sys.modules['nhlpy'] = fake_nhlpy
+
+class _FakeStorageClient:
+    @classmethod
+    def from_service_account_json(cls, *args, **kwargs):
+        return cls()
+
+    def bucket(self, *args, **kwargs):
+        return types.SimpleNamespace(
+            blob=lambda *a, **kw: types.SimpleNamespace(
+                exists=lambda: False,
+                download_as_text=lambda: "",
+                upload_from_string=lambda *a, **kw: None,
+            )
+        )
+
+fake_storage = types.SimpleNamespace(Client=_FakeStorageClient, Bucket=types.SimpleNamespace)
+fake_exceptions = types.SimpleNamespace(NotFound=Exception)
+fake_google_cloud = types.SimpleNamespace(storage=fake_storage)
+fake_google_api_core = types.SimpleNamespace(exceptions=fake_exceptions)
+sys.modules.setdefault("google", types.SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault("google.cloud", fake_google_cloud)
+sys.modules.setdefault("google.cloud.storage", fake_storage)
+sys.modules.setdefault("google.api_core", fake_google_api_core)
+sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+
+import engine.generate_summary
 
 
 def test_generate_summary_team_breakdown():
@@ -9,7 +40,7 @@ def test_generate_summary_team_breakdown():
         {"event_type": "hit", "period": 2, "team_id": 2},
     ]
 
-    summary = generate_summary(events)
+    summary = engine.generate_summary.generate_summary(events)
 
     assert "Team Comparison" in summary
     assert "- Team 1: G 1, SOG 1, PIM 1" in summary
@@ -91,7 +122,7 @@ def test_generate_summary_player_info():
         },
     ]
 
-    summary = generate_summary(events)
+    summary = engine.generate_summary.generate_summary(events)
 
     assert "3 Stars of the Game" in summary
     assert "- Star 1: Player One (Flyers) (C) - Goals: 2, Assists: 0, Points: 2" in summary
