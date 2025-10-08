@@ -11,8 +11,6 @@ except Exception:
 class ScheduleFetchError(Exception):
     """Raised when fetching the schedule fails."""
 
-_client = NHLClient()  # reuse one client per process
-
 
 def get_schedule(
     date: str,
@@ -36,7 +34,12 @@ def get_schedule(
         ScheduleFetchError: On fetch errors.
     """
     try:
-        sched = _client.schedule.get_schedule(date=date)
+        client = NHLClient()
+    except Exception as exc:  # pragma: no cover - defensive programming
+        raise ScheduleFetchError(f"Failed to create NHL client: {exc}") from exc
+
+    try:
+        sched = client.schedule.get_schedule(date=date)
     except Exception as exc:  # pragma: no cover - defensive programming
         raise ScheduleFetchError(f"Failed to fetch schedule for {date}: {exc}") from exc
 
