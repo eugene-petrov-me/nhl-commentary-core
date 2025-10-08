@@ -1,5 +1,5 @@
 openai
 requests
 python-dotenv
-nhlpy
+nhl-api-py
 google-cloud-storage
