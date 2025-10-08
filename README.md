@@ -48,7 +48,13 @@ pip install -r requirements.txt
 Run the CLI to summarize a game:
 
 ```bash
-python main.py
+python -m nhl_commentary_core
+```
+
+Or, after installation, use the convenience command:
+
+```bash
+nhl-commentary
 ```
 
 Follow the prompts to choose a game and select between AI or rule-based summaries.
