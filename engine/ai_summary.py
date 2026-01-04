@@ -11,11 +11,15 @@ from openai import OpenAI
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
-load_dotenv()
-api_key = getenv("OPENAI_API_KEY")
-if not api_key:
-    raise RuntimeError("Missing OPENAI_API_KEY environment variable")
-client = OpenAI(api_key=api_key)
+
+def _get_client() -> OpenAI:
+    """Create an OpenAI client after validating environment configuration."""
+    load_dotenv()
+    api_key = getenv("OPENAI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Missing OPENAI_API_KEY environment variable")
+    return OpenAI(api_key=api_key)
+
 
 def _load_template(name: str) -> str:
     """Load a text template from the prompts directory."""
@@ -41,7 +45,7 @@ def generate_ai_summary(play_by_play: Dict, game_story: Dict) -> str:
     )
 
     try:
-        response = client.responses.create(
+        response = _get_client().responses.create(
             model="gpt-5-nano",
             instructions="Talk like The Hockey Guy.",
             input=populated,
