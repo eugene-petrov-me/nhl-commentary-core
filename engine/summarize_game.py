@@ -1,14 +1,18 @@
 """High-level game summarization utilities."""
+import logging
 from typing import Optional
 from .process_game import process_game_events
 from .ai_summary import generate_ai_summary
-from data_fetch.play_by_play import get_play_by_play 
+from data_fetch.play_by_play import get_play_by_play
 from data_fetch.game_story import get_game_story
+from data_fetch.editorial import get_editorial, EditorialFetchError
 from .summaries import (
     get_or_build_stats_summary,
     save_ai_summary,
     load_ai_summary,
 )
+
+logger = logging.getLogger(__name__)
 
 
 def summarize_game(game_id: int, date: Optional[str] = None, use_ai: bool = True) -> str:
@@ -29,10 +33,19 @@ def summarize_game(game_id: int, date: Optional[str] = None, use_ai: bool = True
         if ai:
             return ai
 
-        # 2) If none exists, fetch pbp + story, generate, cache
+        # 2) If none exists, fetch pbp + story + editorial, generate, cache
         pbp = get_play_by_play(game_id)
         story = get_game_story(game_id)
-        ai_summary = generate_ai_summary(pbp, story)
+
+        editorial = None
+        try:
+            editorial = get_editorial(game_id, date=date)
+        except EditorialFetchError:
+            logger.warning(
+                "Editorial fetch failed for game %s; proceeding without it", game_id, exc_info=True
+            )
+
+        ai_summary = generate_ai_summary(pbp, story, editorial=editorial)
         save_ai_summary(game_id=game_id, md=ai_summary, date=date)
         return ai_summary
 

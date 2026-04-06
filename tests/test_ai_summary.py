@@ -59,6 +59,46 @@ def test_generate_ai_summary_includes_payloads(monkeypatch):
     assert summary == expected
 
 
+def test_generate_ai_summary_includes_editorial(monkeypatch):
+    """When editorial is provided, its headline and body appear in the prompt."""
+    editorial = {
+        "headline": "Historic rivalry clash",
+        "body": "The Habs and Leafs met for the 500th time.",
+        "summary": "A great game.",
+    }
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, editorial=editorial)
+
+    assert "Historic rivalry clash" in captured["input"]
+    assert "500th time" in captured["input"]
+
+
+def test_generate_ai_summary_no_editorial_uses_fallback(monkeypatch):
+    """When editorial is None, the prompt includes the fallback text."""
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, editorial=None)
+
+    assert "No editorial recap available." in captured["input"]
+
+
 def test_generate_ai_summary_uses_model_from_settings(monkeypatch):
     captured = {}
 
