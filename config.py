@@ -14,6 +14,8 @@ class Settings:
     """Runtime configuration values."""
 
     gcs_bucket_name: str
+    openai_api_key: str
+    openai_model: str
 
 
 _override_stack: list[Settings] = []
@@ -26,7 +28,15 @@ def _build_settings() -> Settings:
     bucket = os.getenv("GCS_BUCKET_NAME", "nhl-commentary-bucket")
     if not bucket:
         raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
-    return Settings(gcs_bucket_name=bucket)
+    openai_api_key = os.getenv("OPENAI_API_KEY", "")
+    if not openai_api_key:
+        raise RuntimeError("Missing OPENAI_API_KEY environment variable")
+    openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    return Settings(
+        gcs_bucket_name=bucket,
+        openai_api_key=openai_api_key,
+        openai_model=openai_model,
+    )
 
 
 def get_settings() -> Settings:

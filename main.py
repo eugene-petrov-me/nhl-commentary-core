@@ -1,5 +1,7 @@
 """Backward-compatible entrypoint for the CLI."""
 
+from __future__ import annotations
+
 from nhl_commentary_core import cli as _cli
 from nhl_commentary_core.cli import SummaryResult
 

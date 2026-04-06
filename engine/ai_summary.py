@@ -5,20 +5,21 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Dict
-from dotenv import load_dotenv
-from os import getenv
+
 from openai import OpenAI
+
+from config import get_settings
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
+_client: OpenAI | None = None
+
 
 def _get_client() -> OpenAI:
-    """Create an OpenAI client after validating environment configuration."""
-    load_dotenv()
-    api_key = getenv("OPENAI_API_KEY")
-    if not api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable")
-    return OpenAI(api_key=api_key)
+    global _client
+    if _client is None:
+        _client = OpenAI(api_key=get_settings().openai_api_key)
+    return _client
 
 
 def _load_template(name: str) -> str:
@@ -46,7 +47,7 @@ def generate_ai_summary(play_by_play: Dict, game_story: Dict) -> str:
 
     try:
         response = _get_client().responses.create(
-            model="gpt-5-nano",
+            model=get_settings().openai_model,
             instructions="Talk like The Hockey Guy.",
             input=populated,
         )

@@ -37,7 +37,7 @@ def test_get_schedule_seeds_index(monkeypatch):
     monkeypatch.setattr(schedule, "mark_artifact", fake_mark)
     monkeypatch.setattr(schedule, "NHLClient", lambda: DummyClient(payload))
 
-    with config.override_settings(config.Settings(gcs_bucket_name="bucket")):
+    with config.override_settings(config.Settings(gcs_bucket_name="bucket", openai_api_key="k", openai_model="gpt-4o-mini")):
         games = schedule.get_schedule("2025-04-25", mark_index=True)
 
     assert len(games) == 1

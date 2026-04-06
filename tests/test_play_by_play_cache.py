@@ -18,7 +18,7 @@ def test_get_play_by_play_uses_cache(monkeypatch):
         lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError("Should not upload on cache hit")),
     )
 
-    with config.override_settings(config.Settings(gcs_bucket_name="test-bucket")):
+    with config.override_settings(config.Settings(gcs_bucket_name="test-bucket", openai_api_key="k", openai_model="gpt-4o-mini")):
         payload = play_by_play.get_play_by_play(123, mark_index=False)
 
     assert payload == {"plays": []}
@@ -49,7 +49,7 @@ def test_get_play_by_play_marks_index(monkeypatch):
     monkeypatch.setattr(play_by_play, "check_file_exists", lambda *args, **kwargs: False)
     monkeypatch.setattr(play_by_play, "upload_json", lambda *args, **kwargs: None)
 
-    with config.override_settings(config.Settings(gcs_bucket_name="bucket")):
+    with config.override_settings(config.Settings(gcs_bucket_name="bucket", openai_api_key="k", openai_model="gpt-4o-mini")):
         play_by_play.get_play_by_play(456, mark_index=True)
 
     assert calls
