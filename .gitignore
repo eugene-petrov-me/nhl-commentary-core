@@ -7,3 +7,6 @@ setup/
 # Claude Code local overrides
 .claude/
 CLAUDE.local.md
+
+# Local planning / roadmap (not tracked in git)
+.plan/

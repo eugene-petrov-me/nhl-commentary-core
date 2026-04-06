@@ -58,7 +58,7 @@ def test_summarize_game_ai(monkeypatch):
     def fake_get_or_build_stats_summary(game_id, events, date=None):
         raise AssertionError("Rule-based summary should not be called")
 
-    def fake_generate_ai_summary(play_by_play, game_story):
+    def fake_generate_ai_summary(play_by_play, game_story, editorial=None):
         assert play_by_play == ["event"]
         assert game_story == {"story": "data"}
         return "ai summary"
@@ -68,6 +68,7 @@ def test_summarize_game_ai(monkeypatch):
     monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate_ai_summary)
     monkeypatch.setattr("engine.summarize_game.get_play_by_play", lambda game_id: ["event"])
     monkeypatch.setattr("engine.summarize_game.get_game_story", lambda game_id: {"story": "data"})
+    monkeypatch.setattr("engine.summarize_game.get_editorial", lambda game_id, **kw: None)
 
     summary = engine.summarize_game.summarize_game(2, use_ai=True)
     assert summary == "ai summary"

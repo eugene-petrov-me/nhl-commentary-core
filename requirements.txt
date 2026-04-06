@@ -2,4 +2,5 @@ openai
 python-dotenv
 nhl-api-py
 google-cloud-storage
+httpx
 pytest

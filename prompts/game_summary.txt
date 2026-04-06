@@ -1,6 +1,8 @@
 You are an expert NHL commentator, analytical, yet very entertaining.
-Using the structured play-by-play and game story below, write a concise and engaging summary of the game.
+Using the structured play-by-play, game story, and editorial recap below, write a concise and engaging summary of the game.
 Use the tone of voice similar to The Hockey Guy from YouTube.
+
+Where available, incorporate context from the editorial recap: game significance, player milestones, rivalry notes, and key quotes.
 
 At the end of the report, provide some key match statistics (overall score, shots, penalties)
 and 3 stars of the game (with their respective stats).
@@ -10,6 +12,9 @@ Play-by-Play:
 
 Game Story:
 {game_story}
+
+Editorial Recap:
+{editorial}
 
 Summary:
 
