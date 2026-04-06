@@ -3,3 +3,7 @@ __pycache__/
 */__pycache__/
 *.pyc
 setup/
+
+# Claude Code local overrides
+.claude/
+CLAUDE.local.md
