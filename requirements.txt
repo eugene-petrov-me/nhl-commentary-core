@@ -1,5 +1,5 @@
 openai
-requests
 python-dotenv
 nhl-api-py
 google-cloud-storage
+pytest

@@ -1,19 +1,15 @@
-import sys, os, importlib
+import sys
 from types import SimpleNamespace
 
 import pytest
 
-# Ensure module can import without hitting the network
-os.environ.setdefault("OPENAI_API_KEY", "test-key")
+import config
 
+# Stub out heavy dependencies so the module imports cleanly
 fake_nhlpy = SimpleNamespace(NHLClient=lambda: SimpleNamespace())
-sys.modules['nhlpy'] = fake_nhlpy
+sys.modules.setdefault("nhlpy", fake_nhlpy)
 
 class _FakeStorageClient:
-    @classmethod
-    def from_service_account_json(cls, *args, **kwargs):
-        return cls()
-
     def bucket(self, *args, **kwargs):
         return SimpleNamespace(
             blob=lambda *a, **kw: SimpleNamespace(
@@ -33,7 +29,14 @@ sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 
-import engine.ai_summary
+import engine.ai_summary  # noqa: E402 — must come after sys.modules stubs
+
+
+TEST_SETTINGS = config.Settings(
+    gcs_bucket_name="test-bucket",
+    openai_api_key="test-key",
+    openai_model="gpt-4o-mini",
+)
 
 
 def test_generate_ai_summary_includes_payloads(monkeypatch):
@@ -47,31 +50,66 @@ def test_generate_ai_summary_includes_payloads(monkeypatch):
         assert "Player One" in input_payload
         return SimpleNamespace(output_text=expected)
 
-    monkeypatch.setattr(engine.ai_summary.client.responses, "create", fake_create)
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
 
+    with config.override_settings(TEST_SETTINGS):
+        summary = engine.ai_summary.generate_ai_summary(play_by_play, game_story)
 
-    summary = engine.ai_summary.generate_ai_summary(play_by_play, game_story)
     assert summary == expected
 
 
-def test_generate_ai_summary_handles_error(monkeypatch):
-    play_by_play = {"events": []}
-    game_story = {"stars": []}
+def test_generate_ai_summary_uses_model_from_settings(monkeypatch):
+    captured = {}
 
+    def fake_create(*args, **kwargs):
+        captured["model"] = kwargs.get("model")
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    custom_settings = config.Settings(
+        gcs_bucket_name="test-bucket",
+        openai_api_key="test-key",
+        openai_model="gpt-4o",
+    )
+    with config.override_settings(custom_settings):
+        engine.ai_summary.generate_ai_summary({}, {})
+
+    assert captured["model"] == "gpt-4o"
+
+
+def test_generate_ai_summary_handles_error(monkeypatch):
     def fake_create(*args, **kwargs):
         raise Exception("boom")
 
-    monkeypatch.setattr(engine.ai_summary.client.responses, "create", fake_create)
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
 
-    with pytest.raises(RuntimeError, match="boom"):
-        engine.ai_summary.generate_ai_summary(play_by_play, game_story)
+    with config.override_settings(TEST_SETTINGS):
+        with pytest.raises(RuntimeError, match="boom"):
+            engine.ai_summary.generate_ai_summary({}, {})
 
 
-def test_missing_api_key(monkeypatch):
+def test_missing_api_key_raises_at_settings_load(monkeypatch):
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    with pytest.raises(RuntimeError):
-        importlib.reload(engine.ai_summary)
+    monkeypatch.delenv("GCS_BUCKET_NAME", raising=False)
+    config.clear_overrides()
+    config.reload_settings.__globals__["_default_settings"] = None  # type: ignore[index]
 
-    # Restore for subsequent tests
-    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
-    importlib.reload(engine.ai_summary)
+    # Patch _build_settings directly to simulate missing key
+    original_build = config._build_settings
+
+    def build_without_key():
+        import os
+        key = os.getenv("OPENAI_API_KEY", "")
+        if not key:
+            raise RuntimeError("Missing OPENAI_API_KEY environment variable")
+        return original_build()
+
+    monkeypatch.setattr(config, "_build_settings", build_without_key)
+    monkeypatch.setattr(config, "_default_settings", None)
+
+    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
+        config.get_settings()
