@@ -61,7 +61,7 @@ def _fetch_from_forge(game_id: int) -> Optional[Dict[str, Any]]:
         resp = httpx.get(index_url, timeout=_HTTPX_TIMEOUT, follow_redirects=True)
         resp.raise_for_status()
         index_data = resp.json()
-    except httpx.HTTPStatusError as exc:
+    except (httpx.HTTPStatusError, httpx.TimeoutException) as exc:
         raise EditorialFetchError(
             f"Forge DAPI index request failed for game {game_id}: {exc}"
         ) from exc
@@ -101,7 +101,7 @@ def _fetch_from_forge(game_id: int) -> Optional[Dict[str, Any]]:
         resp2 = httpx.get(story_url, timeout=_HTTPX_TIMEOUT, follow_redirects=True)
         resp2.raise_for_status()
         story_data = resp2.json()
-    except httpx.HTTPStatusError as exc:
+    except (httpx.HTTPStatusError, httpx.TimeoutException) as exc:
         raise EditorialFetchError(
             f"Forge DAPI story request failed for game {game_id}: {exc}"
         ) from exc

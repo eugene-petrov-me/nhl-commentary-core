@@ -283,3 +283,63 @@ def test_extract_body_concatenates_markdown_parts():
 def test_extract_body_empty_parts():
     assert editorial_mod._extract_body({}) == ""
     assert editorial_mod._extract_body({"parts": []}) == ""
+
+
+def test_http_error_on_index_raises_editorial_fetch_error(monkeypatch):
+    """An HTTP error from the Forge index endpoint raises EditorialFetchError."""
+    fake_gcs = _make_fake_gcs(exists=False)
+
+    class FakeHTTPStatusError(Exception):
+        pass
+
+    class FakeTimeoutException(Exception):
+        pass
+
+    def fake_get(url, *, timeout, follow_redirects=True):
+        raise FakeHTTPStatusError("404 Not Found")
+
+    fake_httpx = SimpleNamespace(
+        get=fake_get,
+        HTTPStatusError=FakeHTTPStatusError,
+        TimeoutException=FakeTimeoutException,
+    )
+
+    monkeypatch.setattr(editorial_mod, "check_file_exists", fake_gcs.check_file_exists)
+    monkeypatch.setattr(editorial_mod, "download_json", fake_gcs.download_json)
+    monkeypatch.setattr(editorial_mod, "upload_json", fake_gcs.upload_json)
+    monkeypatch.setattr(editorial_mod, "mark_artifact", lambda *a, **kw: None)
+    monkeypatch.setitem(sys.modules, "httpx", fake_httpx)
+
+    with config.override_settings(TEST_SETTINGS):
+        with pytest.raises(editorial_mod.EditorialFetchError, match="404"):
+            editorial_mod.get_editorial(12345)
+
+
+def test_cache_read_error_falls_through_to_live_fetch(monkeypatch):
+    """A corrupt cache entry is ignored and the live Forge DAPI is called instead."""
+    fake_httpx = _make_httpx_mock(FORGE_INDEX_RESPONSE, FORGE_STORY_RESPONSE)
+    upload_calls = []
+
+    def check_file_exists(bucket, path):
+        return True  # Cache appears to exist
+
+    def download_json(bucket, path):
+        raise RuntimeError("corrupt blob")  # Cache read fails
+
+    def upload_json(bucket, path, data):
+        upload_calls.append(data)
+
+    monkeypatch.setattr(editorial_mod, "check_file_exists", check_file_exists)
+    monkeypatch.setattr(editorial_mod, "download_json", download_json)
+    monkeypatch.setattr(editorial_mod, "upload_json", upload_json)
+    monkeypatch.setattr(editorial_mod, "mark_artifact", lambda *a, **kw: None)
+    monkeypatch.setitem(sys.modules, "httpx", fake_httpx)
+
+    with config.override_settings(TEST_SETTINGS):
+        result = editorial_mod.get_editorial(12345)
+
+    # Should have fallen through to live fetch and returned real data
+    assert result is not None
+    assert result["headline"] == "Great game headline"
+    # And re-cached it
+    assert len(upload_calls) == 1
