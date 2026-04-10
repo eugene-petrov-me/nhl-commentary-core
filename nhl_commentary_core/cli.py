@@ -5,7 +5,7 @@ from __future__ import annotations
 import argparse
 import logging
 from dataclasses import dataclass
-from typing import Iterable, Optional  # noqa: F401 — Optional used in function signatures
+from typing import Iterable, Optional
 
 try:  # pragma: no cover - optional dependency during testing
     from data_fetch.schedule import get_schedule as _get_schedule

@@ -114,3 +114,14 @@ def test_summarize_game_ai_includes_editorial_fields(monkeypatch):
 
     assert result.editorial_headline == "Big win"
     assert result.editorial_summary == "Short recap."
+
+
+def test_summarize_game_fetch_failure_propagates(monkeypatch):
+    """Fetch errors propagate out of summarize_game so batch.py can catch and skip."""
+    monkeypatch.setattr("engine.summarize_game.load_ai_summary", lambda game_id: None)
+    monkeypatch.setattr("engine.summarize_game.get_play_by_play",
+                        lambda gid: (_ for _ in ()).throw(RuntimeError("network error")))
+
+    import pytest
+    with pytest.raises(RuntimeError, match="network error"):
+        engine.summarize_game.summarize_game(5, use_ai=True)
