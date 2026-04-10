@@ -17,6 +17,7 @@ try:  # pragma: no cover - optional dependency during testing
 except Exception:  # pragma: no cover - fallback when optional deps missing
     _summarize_game = None
 from models.game_schedule import GameSchedule
+from models.game_summary import GameSummary
 
 DEFAULT_DATE = "2025-04-01"  # Fallback date if user input is empty
 
@@ -29,7 +30,7 @@ class GameSelectionError(RuntimeError):
 
 @dataclass(frozen=True)
 class SummaryResult:
-    summary: Optional[str]
+    summary: GameSummary
     game: GameSchedule
 
 
@@ -143,8 +144,8 @@ def _interactive_flow(args: argparse.Namespace) -> None:
 
     game = result.game
     print(f"Processing Game ID: {game.game_id} ({game.home_team} vs {game.away_team})")
-    if result.summary:
-        print(result.summary)
+    if result.summary.summary_markdown:
+        print(result.summary.summary_markdown)
     else:
         print(f"⚠️ No events for game {game.game_id}")
 
@@ -177,8 +178,8 @@ def main(argv: Optional[list[str]] = None) -> None:
             logger.exception("Failed to summarize game")
             raise SystemExit(str(exc)) from exc
 
-        if result.summary:
-            print(result.summary)
+        if result.summary.summary_markdown:
+            print(result.summary.summary_markdown)
         else:
             print(f"⚠️ No events for game {result.game.game_id}")
         return

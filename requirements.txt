@@ -3,4 +3,5 @@ python-dotenv
 nhl-api-py
 google-cloud-storage
 httpx
+pydantic
 pytest
