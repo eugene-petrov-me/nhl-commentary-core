@@ -9,6 +9,7 @@ AI-powered NHL live commentary backend. Fetches play-by-play data and generates 
 - **Lint**: `python -m ruff check . && python -m ruff format .`
 - **Type check**: `python -m mypy .`
 - **Install deps**: `pip install -r requirements.txt`
+- **Serve**: `uvicorn api.app:app --reload`
 - **Python**: 3.11+
 - **Config**: loaded from `.env` via `config.py` → `get_settings()`
 

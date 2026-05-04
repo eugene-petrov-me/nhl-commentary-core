@@ -5,3 +5,5 @@ google-cloud-storage
 httpx
 pydantic
 pytest
+fastapi
+uvicorn[standard]
