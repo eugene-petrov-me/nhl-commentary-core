@@ -13,6 +13,7 @@ class GameSummary(BaseModel):
 
     game_id: int
     date: Optional[str] = None          # YYYY-MM-DD
+    # None until enriched via model_copy(update={...}) by callers that hold a GameSchedule
     home_team: Optional[str] = None
     away_team: Optional[str] = None
     home_score: Optional[int] = None

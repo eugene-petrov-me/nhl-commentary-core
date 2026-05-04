@@ -125,6 +125,17 @@ def test_get_game_summary_openai_error_returns_503(monkeypatch):
     assert "OpenAI quota exceeded" in response.json()["detail"]
 
 
+def test_get_game_summary_unexpected_error_returns_500(monkeypatch):
+    def fake_summarize(*a, **kw):
+        raise ValueError("unexpected internal error")
+
+    monkeypatch.setattr(app_mod, "summarize_game", fake_summarize)
+    no_raise_client = TestClient(app, raise_server_exceptions=False)
+    with config.override_settings(TEST_SETTINGS):
+        response = no_raise_client.get("/v1/games/1/summary")
+    assert response.status_code == 500
+
+
 # --- GET /v1/games/date/{date}/summaries ---
 
 

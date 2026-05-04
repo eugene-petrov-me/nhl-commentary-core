@@ -4,8 +4,7 @@ import logging
 from datetime import date as Date
 from typing import List, Optional
 
-from fastapi import FastAPI, Query
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, HTTPException, Query
 
 from data_fetch.game_story import GameStoryFetchError
 from data_fetch.play_by_play import PlayByPlayFetchError
@@ -29,10 +28,10 @@ def get_game_summary(
         return summarize_game(game_id, date=date, use_ai=use_ai)
     except (PlayByPlayFetchError, GameStoryFetchError) as exc:
         logger.warning("NHL API fetch failed for game %s: %s", game_id, exc)
-        return JSONResponse(status_code=502, content={"detail": str(exc)})
+        raise HTTPException(status_code=502, detail=str(exc))
     except RuntimeError as exc:
         logger.error("OpenAI failure for game %s: %s", game_id, exc)
-        return JSONResponse(status_code=503, content={"detail": str(exc)})
+        raise HTTPException(status_code=503, detail=str(exc))
 
 
 @app.get("/v1/games/date/{date}/summaries", response_model=List[GameSummary])
@@ -45,4 +44,4 @@ def get_date_summaries(
         return summarize_date(date_str, use_ai=use_ai)
     except ScheduleFetchError as exc:
         logger.warning("Schedule fetch failed for %s: %s", date_str, exc)
-        return JSONResponse(status_code=502, content={"detail": str(exc)})
+        raise HTTPException(status_code=502, detail=str(exc))
