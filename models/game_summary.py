@@ -9,12 +9,7 @@ from pydantic import BaseModel
 
 
 class GameSummary(BaseModel):
-    """Typed result returned by summarize_game and summarize_date.
-
-    team/score fields default to None because summarize_game only receives a
-    game_id. Callers that hold a GameSchedule (CLI, batch) enrich these fields
-    via model_copy(update={...}) after the fact.
-    """
+    """Typed result returned by summarize_game and summarize_date."""
 
     game_id: int
     date: Optional[str] = None          # YYYY-MM-DD

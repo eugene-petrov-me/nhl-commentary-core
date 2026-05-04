@@ -4,8 +4,6 @@ import sys
 from datetime import datetime, timezone
 from types import SimpleNamespace
 
-import pytest
-
 import config
 
 # Stub heavy deps before any project imports
