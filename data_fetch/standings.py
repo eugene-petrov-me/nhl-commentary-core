@@ -22,12 +22,17 @@ def get_standings(date: str, *, home_abbr: str, away_abbr: str) -> List[dict]:
     try:
         client = NHLClient()
     except Exception as exc:
+        logger.warning("Failed to create NHL client: %s", exc)
         raise StandingsFetchError(f"Failed to create NHL client: {exc}") from exc
 
     try:
         data = client.standings.get_standings(date=date)
     except Exception as exc:
+        logger.warning("Standings request failed for %s: %s", date, exc)
         raise StandingsFetchError(f"Failed to fetch standings for {date}: {exc}") from exc
+
+    if not data:
+        return []
 
     all_standings = data.get("standings") or []
     abbrevs = {home_abbr, away_abbr}

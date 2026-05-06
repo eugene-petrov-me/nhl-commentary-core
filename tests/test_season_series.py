@@ -50,6 +50,15 @@ def test_get_season_series_handles_missing_keys(monkeypatch):
     assert result["seasonSeriesWins"] == {}
 
 
+def test_get_season_series_handles_none_response(monkeypatch):
+    monkeypatch.setattr(series_mod, "NHLClient", lambda: _fake_right_rail(None))
+
+    result = get_season_series(2024020001)
+
+    assert result["seasonSeries"] == []
+    assert result["seasonSeriesWins"] == {}
+
+
 def test_get_season_series_raises_on_client_error(monkeypatch):
     monkeypatch.setattr(series_mod, "NHLClient", lambda: (_ for _ in ()).throw(RuntimeError("fail")))
 

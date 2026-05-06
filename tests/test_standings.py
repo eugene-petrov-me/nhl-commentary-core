@@ -88,6 +88,20 @@ def test_get_standings_returns_empty_when_api_returns_none(monkeypatch):
     assert result == []
 
 
+def test_get_standings_returns_empty_when_response_is_none(monkeypatch):
+    monkeypatch.setattr(
+        standings_mod,
+        "NHLClient",
+        lambda: SimpleNamespace(
+            standings=SimpleNamespace(get_standings=lambda **kw: None)
+        ),
+    )
+
+    result = get_standings("2025-04-25", home_abbr="MTL", away_abbr="COL")
+
+    assert result == []
+
+
 def test_get_standings_raises_on_api_error(monkeypatch):
     def bad_client():
         raise RuntimeError("network error")

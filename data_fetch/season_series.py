@@ -22,14 +22,19 @@ def get_season_series(game_id: int) -> dict:
     try:
         client = NHLClient()
     except Exception as exc:
+        logger.warning("Failed to create NHL client: %s", exc)
         raise SeasonSeriesFetchError(f"Failed to create NHL client: {exc}") from exc
 
     try:
         data = client.game_center.right_rail(game_id=str(game_id))
     except Exception as exc:
+        logger.warning("right_rail request failed for game %s: %s", game_id, exc)
         raise SeasonSeriesFetchError(
             f"Failed to fetch right_rail for game {game_id}: {exc}"
         ) from exc
+
+    if not data:
+        return {"seasonSeries": [], "seasonSeriesWins": {}}
 
     return {
         "seasonSeries": data.get("seasonSeries") or [],
