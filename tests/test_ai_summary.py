@@ -120,6 +120,95 @@ def test_generate_ai_summary_uses_model_from_settings(monkeypatch):
     assert captured["model"] == "gpt-4o"
 
 
+def test_generate_ai_summary_includes_standings(monkeypatch):
+    """Standings text appears in the prompt when standings are provided."""
+    standings = [
+        {
+            "teamAbbrev": "MTL",
+            "divisionSequence": 4,
+            "divisionName": "Atlantic",
+            "wins": 35, "losses": 30, "otLosses": 7,
+            "points": 77, "streakCode": "W", "streakCount": 2,
+        }
+    ]
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, standings=standings)
+
+    assert "MTL" in captured["input"]
+    assert "Atlantic" in captured["input"]
+    assert "77pts" in captured["input"]
+
+
+def test_generate_ai_summary_no_standings_uses_fallback(monkeypatch):
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, standings=None)
+
+    assert "Standings unavailable." in captured["input"]
+
+
+def test_generate_ai_summary_includes_season_series(monkeypatch):
+    """Season series text appears in the prompt when season_series is provided."""
+    season_series = {
+        "seasonSeriesWins": {"awayTeamWins": 2, "homeTeamWins": 1},
+        "seasonSeries": [
+            {
+                "gameDate": "2024-10-04",
+                "awayTeam": {"abbrev": "NJD", "score": 4},
+                "homeTeam": {"abbrev": "BUF", "score": 1},
+            }
+        ],
+    }
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, season_series=season_series)
+
+    assert "2-1" in captured["input"]
+    assert "NJD" in captured["input"]
+    assert "2024-10-04" in captured["input"]
+
+
+def test_generate_ai_summary_no_series_uses_fallback(monkeypatch):
+    captured = {}
+
+    def fake_create(*args, **kwargs):
+        captured["input"] = kwargs["input"]
+        return SimpleNamespace(output_text="ok")
+
+    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+
+    with config.override_settings(TEST_SETTINGS):
+        engine.ai_summary.generate_ai_summary({}, {}, season_series=None)
+
+    assert "Season series data unavailable." in captured["input"]
+
+
 def test_generate_ai_summary_handles_error(monkeypatch):
     def fake_create(*args, **kwargs):
         raise Exception("boom")
