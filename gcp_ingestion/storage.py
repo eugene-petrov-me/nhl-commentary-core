@@ -52,8 +52,11 @@ def override_storage_client(client: storage.Client) -> Iterator[storage.Client]:
             _override_stack.pop()
 
 
-def _get_bucket(bucket_name: str, *, client: Optional[storage.Client] = None) -> storage.Bucket:
+def _get_bucket(
+    bucket_name: str, *, client: Optional[storage.Client] = None
+) -> storage.Bucket:
     return (client or get_storage_client()).bucket(bucket_name)
+
 
 def check_file_exists(
     bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
@@ -65,6 +68,7 @@ def check_file_exists(
     except NotFound:
         return False
 
+
 def download_json(
     bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
 ) -> Dict[str, Any]:
@@ -72,6 +76,7 @@ def download_json(
     blob = bucket.blob(blob_name)
     text = blob.download_as_text()  # raises if missing; let caller handle
     return json.loads(text)
+
 
 def upload_json(
     bucket_name: str,
@@ -89,12 +94,14 @@ def upload_json(
     )
     logger.info("Uploaded JSON to gs://%s/%s", bucket_name, blob_name)
 
+
 def download_text(
     bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
 ) -> str:
     bucket = _get_bucket(bucket_name, client=client)
     blob = bucket.blob(blob_name)
     return blob.download_as_text()
+
 
 def upload_text(
     bucket_name: str,

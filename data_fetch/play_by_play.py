@@ -17,14 +17,18 @@ logger = logging.getLogger(__name__)
 def _bucket_name() -> str:
     return get_settings().gcs_bucket_name
 
+
 PBP_BLOB = "raw/play_by_play/{game_id}.json"
+
 
 class PlayByPlayFetchError(Exception):
     """Raised when fetching play-by-play data fails."""
 
+
 def _looks_like_pbp(payload: Dict[str, Any]) -> bool:
     """Loose shape check for MVP."""
     return isinstance(payload, dict) and "plays" in payload
+
 
 def _infer_date(pbp: Dict[str, Any]) -> Optional[str]:
     """Try to pull YYYY-MM-DD from typical fields in the PBP."""
@@ -37,19 +41,23 @@ def _infer_date(pbp: Dict[str, Any]) -> Optional[str]:
                 return v
     return None
 
+
 def _infer_abbrs(pbp: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
     """Return (away_abbr, home_abbr) if present."""
     away = (pbp.get("awayTeam") or {}).get("abbrev")
     home = (pbp.get("homeTeam") or {}).get("abbrev")
     return away, home
 
-def _maybe_mark_index(pbp: Dict[str, Any],
-                      *,
-                      game_id: int,
-                      date: Optional[str],
-                      away_abbr: Optional[str],
-                      home_abbr: Optional[str],
-                      mark: bool) -> None:
+
+def _maybe_mark_index(
+    pbp: Dict[str, Any],
+    *,
+    game_id: int,
+    date: Optional[str],
+    away_abbr: Optional[str],
+    home_abbr: Optional[str],
+    mark: bool,
+) -> None:
     """Best-effort update of the date index for raw_pbp."""
     if not mark:
         return
@@ -70,17 +78,21 @@ def _maybe_mark_index(pbp: Dict[str, Any],
             )
         except Exception:
             logger.warning(
-                "Failed to mark raw_pbp index for game %s on %s", game_id, d, exc_info=True
+                "Failed to mark raw_pbp index for game %s on %s",
+                game_id,
+                d,
+                exc_info=True,
             )
+
 
 def get_play_by_play(
     game_id: int,
     *,
     force_refresh: bool = False,
-    date: Optional[str] = None,       # "YYYY-MM-DD" (optional, used for index)
+    date: Optional[str] = None,  # "YYYY-MM-DD" (optional, used for index)
     away_abbr: Optional[str] = None,  # optional abbrevs for index
     home_abbr: Optional[str] = None,
-    mark_index: bool = True,          # turn index marking on/off
+    mark_index: bool = True,  # turn index marking on/off
 ) -> Dict[str, Any]:
     """
     Fetch the play-by-play data for a specific NHL game, using GCS as a cache.
@@ -93,9 +105,14 @@ def get_play_by_play(
     if not force_refresh and check_file_exists(bucket, blob_path):
         pbp = download_json(bucket, blob_path)
         if _looks_like_pbp(pbp):
-            _maybe_mark_index(pbp, game_id=game_id,
-                              date=date, away_abbr=away_abbr, home_abbr=home_abbr,
-                              mark=mark_index)
+            _maybe_mark_index(
+                pbp,
+                game_id=game_id,
+                date=date,
+                away_abbr=away_abbr,
+                home_abbr=home_abbr,
+                mark=mark_index,
+            )
             return pbp
         # fall through to refetch if cache is malformed
 
@@ -117,12 +134,19 @@ def get_play_by_play(
             upload_json(bucket, blob_path, pbp)
         except Exception:
             logger.warning(
-                "Failed to upload play-by-play cache for game %s", game_id, exc_info=True
+                "Failed to upload play-by-play cache for game %s",
+                game_id,
+                exc_info=True,
             )
 
-        _maybe_mark_index(pbp, game_id=game_id,
-                          date=date, away_abbr=away_abbr, home_abbr=home_abbr,
-                          mark=mark_index)
+        _maybe_mark_index(
+            pbp,
+            game_id=game_id,
+            date=date,
+            away_abbr=away_abbr,
+            home_abbr=home_abbr,
+            mark=mark_index,
+        )
         return pbp
 
     except Exception as exc:

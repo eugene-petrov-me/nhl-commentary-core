@@ -1,4 +1,5 @@
 """Tests for api.app routes."""
+
 import sys
 from datetime import datetime, timezone
 from types import SimpleNamespace
@@ -66,7 +67,9 @@ def _make_summary(game_id: int = 1) -> GameSummary:
 
 
 def test_get_game_summary_returns_200(monkeypatch):
-    monkeypatch.setattr(app_mod, "summarize_game", lambda game_id, date, use_ai: _make_summary(game_id))
+    monkeypatch.setattr(
+        app_mod, "summarize_game", lambda game_id, date, use_ai: _make_summary(game_id)
+    )
     with config.override_settings(TEST_SETTINGS):
         response = client.get("/v1/games/42/summary")
     assert response.status_code == 200

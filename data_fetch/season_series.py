@@ -1,4 +1,5 @@
 """Fetch season series data for a game matchup from the NHL API."""
+
 from __future__ import annotations
 
 import logging

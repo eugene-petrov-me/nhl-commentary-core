@@ -13,7 +13,9 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
     player_team_map: Dict[int, int] = {}
     for spot in roster_spots:
         pid = spot.get("playerId")
-        player_map[pid] = f"{spot.get('firstName', {}).get('default', '')} {spot.get('lastName', {}).get('default', '')}".strip()
+        player_map[pid] = (
+            f"{spot.get('firstName', {}).get('default', '')} {spot.get('lastName', {}).get('default', '')}".strip()
+        )
         player_team_map[pid] = spot.get("teamId")
 
     team_name_map: Dict[int, str] = {}
@@ -97,7 +99,9 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
             "id": story.get("homeTeam", {}).get("id"),
             "name": (story.get("homeTeam", {}).get("name") or {}).get("default"),
             "abbrev": story.get("homeTeam", {}).get("abbrev"),
-            "place_name": (story.get("homeTeam", {}).get("placeName") or {}).get("default"),
+            "place_name": (story.get("homeTeam", {}).get("placeName") or {}).get(
+                "default"
+            ),
             "score": story.get("homeTeam", {}).get("score"),
             "sog": story.get("homeTeam", {}).get("sog"),
             "logo": story.get("homeTeam", {}).get("logo"),
@@ -106,7 +110,9 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
             "id": story.get("awayTeam", {}).get("id"),
             "name": (story.get("awayTeam", {}).get("name") or {}).get("default"),
             "abbrev": story.get("awayTeam", {}).get("abbrev"),
-            "place_name": (story.get("awayTeam", {}).get("placeName") or {}).get("default"),
+            "place_name": (story.get("awayTeam", {}).get("placeName") or {}).get(
+                "default"
+            ),
             "score": story.get("awayTeam", {}).get("score"),
             "sog": story.get("awayTeam", {}).get("sog"),
             "logo": story.get("awayTeam", {}).get("logo"),

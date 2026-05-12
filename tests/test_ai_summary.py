@@ -9,6 +9,7 @@ import config
 fake_nhlpy = SimpleNamespace(NHLClient=lambda: SimpleNamespace())
 sys.modules.setdefault("nhlpy", fake_nhlpy)
 
+
 class _FakeStorageClient:
     def bucket(self, *args, **kwargs):
         return SimpleNamespace(
@@ -19,11 +20,14 @@ class _FakeStorageClient:
             )
         )
 
+
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
 fake_exceptions = SimpleNamespace(NotFound=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -127,8 +131,12 @@ def test_generate_ai_summary_includes_standings(monkeypatch):
             "teamAbbrev": "MTL",
             "divisionSequence": 4,
             "divisionName": "Atlantic",
-            "wins": 35, "losses": 30, "otLosses": 7,
-            "points": 77, "streakCode": "W", "streakCount": 2,
+            "wins": 35,
+            "losses": 30,
+            "otLosses": 7,
+            "points": 77,
+            "streakCode": "W",
+            "streakCount": 2,
         }
     ]
     captured = {}
@@ -232,6 +240,7 @@ def test_missing_api_key_raises_at_settings_load(monkeypatch):
 
     def build_without_key():
         import os
+
         key = os.getenv("OPENAI_API_KEY", "")
         if not key:
             raise RuntimeError("Missing OPENAI_API_KEY environment variable")

@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+
 def interpret_takeaway(event: Dict[str, Any]) -> Dict[str, Any]:
     """Interpret a takeaway event and return structured LLM-ready data."""
     details = event.get("details", {})

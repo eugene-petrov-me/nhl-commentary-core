@@ -35,12 +35,14 @@ def summarize_date(
     for game in schedule:
         try:
             summary = summarize_game(game.game_id, date=date, use_ai=use_ai)
-            enriched = summary.model_copy(update={
-                "home_team": game.home_team,
-                "away_team": game.away_team,
-                "home_score": game.home_team_score,
-                "away_score": game.away_team_score,
-            })
+            enriched = summary.model_copy(
+                update={
+                    "home_team": game.home_team,
+                    "away_team": game.away_team,
+                    "home_score": game.home_team_score,
+                    "away_score": game.away_team_score,
+                }
+            )
             results.append(enriched)
         except Exception:
             logger.warning(

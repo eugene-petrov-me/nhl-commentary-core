@@ -56,7 +56,9 @@ def summarize_game(*args, **kwargs):
     return _summarize_game(*args, **kwargs)
 
 
-def _select_game(schedule: Iterable[GameSchedule], *, game_id: Optional[int]) -> GameSchedule:
+def _select_game(
+    schedule: Iterable[GameSchedule], *, game_id: Optional[int]
+) -> GameSchedule:
     games = list(schedule)
     if not games:
         raise GameSelectionError("No games available for the requested date.")
@@ -90,7 +92,9 @@ def _build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(description="Summarize an NHL game")
     parser.add_argument("--date", help="Game date (YYYY-MM-DD)")
     parser.add_argument("--game-id", type=int, help="NHL game ID to summarize")
-    parser.add_argument("--ai", dest="use_ai", action="store_true", help="Use AI summary")
+    parser.add_argument(
+        "--ai", dest="use_ai", action="store_true", help="Use AI summary"
+    )
     parser.add_argument(
         "--rule",
         dest="use_ai",
@@ -166,7 +170,8 @@ def main(argv: Optional[list[str]] = None) -> None:
         ]
         if missing:
             parser.error(
-                "Non-interactive mode requires explicit values for: " + ", ".join(missing)
+                "Non-interactive mode requires explicit values for: "
+                + ", ".join(missing)
             )
         try:
             result = generate_summary_for_date(

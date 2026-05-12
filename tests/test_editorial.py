@@ -30,7 +30,9 @@ fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace
 fake_exceptions = SimpleNamespace(NotFound=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -102,7 +104,9 @@ def _make_fake_gcs(*, exists: bool, cached_value=None):
     return fake
 
 
-def _make_httpx_mock(index_response, story_response=None, raise_on_index=False, raise_on_story=False):
+def _make_httpx_mock(
+    index_response, story_response=None, raise_on_index=False, raise_on_story=False
+):
     """Return a fake httpx module."""
 
     class FakeResponse:
