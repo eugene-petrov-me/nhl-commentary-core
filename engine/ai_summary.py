@@ -31,7 +31,7 @@ def _load_template(name: str) -> str:
 def _ordinal(n: object) -> str:
     """Return ordinal suffix for an integer (1 → 'st', 2 → 'nd', etc.)."""
     try:
-        i = int(n)  # type: ignore[arg-type]
+        i = int(n)  # type: ignore[call-overload]
     except (TypeError, ValueError):
         return ""
     if 11 <= (i % 100) <= 13:

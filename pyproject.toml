@@ -21,3 +21,12 @@ exclude = ["notebooks"]
 
 [tool.ruff.lint]
 per-file-ignores = {"tests/**" = ["E402"]}
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+exclude = ["tests/"]
+
+[[tool.mypy.overrides]]
+module = "engine.generate_summary"
+ignore_errors = true

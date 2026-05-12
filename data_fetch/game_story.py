@@ -80,7 +80,7 @@ def _maybe_mark_index(
     a, h = _infer_abbrs(story)
     away = away_abbr or a
     home = home_abbr or h
-    if d and mark_artifact:
+    if d:
         try:
             mark_artifact(
                 _bucket_name(),

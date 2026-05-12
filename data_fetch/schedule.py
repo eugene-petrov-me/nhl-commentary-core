@@ -57,9 +57,9 @@ def get_schedule(
             game_id=g.get("id"),
             season_id=g.get("season"),
             game_type=g.get("gameType"),
-            home_team=(g.get("homeTeam") or {}).get("abbrev"),
+            home_team=(g.get("homeTeam") or {}).get("abbrev") or "",
             home_team_score=(g.get("homeTeam") or {}).get("score"),
-            away_team=(g.get("awayTeam") or {}).get("abbrev"),
+            away_team=(g.get("awayTeam") or {}).get("abbrev") or "",
             away_team_score=(g.get("awayTeam") or {}).get("score"),
             winning_goal_scorer_id=(g.get("winningGoalScorer") or {}).get("playerId"),
         )

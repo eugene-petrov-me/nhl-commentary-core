@@ -131,7 +131,7 @@ def _maybe_mark_index(
     mark: bool,
 ) -> None:
     """Best-effort update of the date index for raw_editorial."""
-    if not mark or not date or not mark_artifact:
+    if not mark or not date:
         return
     try:
         mark_artifact(

@@ -78,7 +78,9 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
                 "event_type": "star",
                 "star": star.get("star"),
                 "team_id": team_id,
-                "team_name": team_name_map.get(team_id),
+                "team_name": team_name_map.get(team_id)
+                if team_id is not None
+                else None,
                 "players": {
                     "player_id": pid,
                     "name": player_map.get(pid),

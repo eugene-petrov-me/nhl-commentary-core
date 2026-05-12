@@ -10,12 +10,12 @@ from typing import Iterable, Optional
 try:  # pragma: no cover - optional dependency during testing
     from data_fetch.schedule import get_schedule as _get_schedule
 except Exception:  # pragma: no cover - fallback when optional deps missing
-    _get_schedule = None
+    _get_schedule = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional dependency during testing
     from engine.summarize_game import summarize_game as _summarize_game
 except Exception:  # pragma: no cover - fallback when optional deps missing
-    _summarize_game = None
+    _summarize_game = None  # type: ignore[assignment]
 from models.game_schedule import GameSchedule
 from models.game_summary import GameSummary
 
