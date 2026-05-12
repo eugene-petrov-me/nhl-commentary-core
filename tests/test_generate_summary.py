@@ -1,9 +1,12 @@
-import sys, os, types
+import os
+import sys
+import types
 
 os.environ.setdefault("OPENAI_API_KEY", "test-key")
 
 fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
-sys.modules['nhlpy'] = fake_nhlpy
+sys.modules["nhlpy"] = fake_nhlpy
+
 
 class _FakeStorageClient:
     @classmethod
@@ -19,11 +22,17 @@ class _FakeStorageClient:
             )
         )
 
-fake_storage = types.SimpleNamespace(Client=_FakeStorageClient, Bucket=types.SimpleNamespace)
+
+fake_storage = types.SimpleNamespace(
+    Client=_FakeStorageClient, Bucket=types.SimpleNamespace
+)
 fake_exceptions = types.SimpleNamespace(NotFound=Exception)
 fake_google_cloud = types.SimpleNamespace(storage=fake_storage)
 fake_google_api_core = types.SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", types.SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google",
+    types.SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core),
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -66,7 +75,11 @@ def test_generate_summary_player_info():
             "period": 2,
             "team_id": 2,
             "team_name": "Penguins",
-            "players": {"scorer_id": 201, "scorer_name": "Player Two", "assist_ids": []},
+            "players": {
+                "scorer_id": 201,
+                "scorer_name": "Player Two",
+                "assist_ids": [],
+            },
         },
         {
             "event_type": "goal",
@@ -80,7 +93,6 @@ def test_generate_summary_player_info():
                 "assist_names": ["Assist Four"],
             },
         },
-
         {
             "event_type": "star",
             "star": 1,
@@ -125,9 +137,12 @@ def test_generate_summary_player_info():
     summary = engine.generate_summary.generate_summary(events)
 
     assert "3 Stars of the Game" in summary
-    assert "- Star 1: Player One (Flyers) (C) - Goals: 2, Assists: 0, Points: 2" in summary
+    assert (
+        "- Star 1: Player One (Flyers) (C) - Goals: 2, Assists: 0, Points: 2" in summary
+    )
     assert "- Star 2: Player Two (Penguins) (G) - GAA: 1.0, SV%: 0.95" in summary
-    assert "- Star 3: Assist Two (Flyers) (D) - Goals: 0, Assists: 1, Points: 1" in summary
+    assert (
+        "- Star 3: Assist Two (Flyers) (D) - Goals: 0, Assists: 1, Points: 1" in summary
+    )
     assert "Top goal scorers (2): Player One (Flyers)" in summary
     assert "Top point scorers (2 pts): Player One (Flyers)" in summary
-
