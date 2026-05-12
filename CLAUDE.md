@@ -16,13 +16,15 @@ AI-powered NHL live commentary backend. Fetches play-by-play data and generates 
 ## Architecture
 
 ```
-data_fetch/       # NHL API clients (schedule, play-by-play, game_story)
+api/              # FastAPI HTTP service layer (GET /v1/games/...)
+data_fetch/       # NHL API clients (schedule, play-by-play, game_story, editorial, standings, season_series)
 engine/           # LLM commentary generation pipeline
   event_handlers/ # Per-event-type handlers
+  batch.py        # summarize_date() — batch all games for a date
 gcp_ingestion/    # GCS upload / BigQuery ingestion
 interpreter/      # Commentary post-processing
-models/           # Pydantic data models
-prompts/          # Prompt templates
+models/           # Pydantic data models (GameSummary, GameSchedule)
+prompts/          # Prompt templates (game_summary.txt)
 config.py         # Centralised Settings dataclass (env-driven)
 main.py           # CLI entry point
 ```
@@ -30,9 +32,11 @@ main.py           # CLI entry point
 ### Key Patterns
 
 - **Config**: always use `from config import get_settings; s = get_settings()`. Never read env vars directly elsewhere.
-- **NHL data**: fetched via `nhlpy` client (not raw HTTP). Instantiate once and pass down.
+- **NHL data**: fetched via `nhlpy` client (not raw HTTP). Fresh `NHLClient()` per function call.
 - **GCS bucket**: `settings.gcs_bucket_name` (default `nhl-commentary-bucket`)
-- **Commentary engine**: `engine/generate_summary.py` orchestrates data → prompt → LLM → output.
+- **AI summary**: `engine/summarize_game.py` orchestrates data → prompt → LLM → `GameSummary`.
+- **Optional context fetches** (editorial, standings, season series): non-fatal — logged and skipped on failure.
+- **HTTP API**: thin shell over engine; `uvicorn api.app:app --reload` to serve.
 
 ## Working Approach
 
