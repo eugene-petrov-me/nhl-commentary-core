@@ -12,7 +12,7 @@ Closes: # (if applicable)
 - [ ] Bug fix
 - [ ] New feature
 - [ ] Documentation
-- [x] CI / tooling
+- [ ] CI / tooling
 
 ## Checklist
 - [ ] Tests added/updated
