@@ -1,11 +1,13 @@
 from dataclasses import dataclass
 from typing import Optional
 
+
 @dataclass
 class GameSchedule:
     """
     Data structure representing a single NHL game's metadata.
     """
+
     game_id: int
     season_id: int
     game_type: int

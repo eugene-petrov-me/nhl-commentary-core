@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+
 def interpret_shot_on_goal(event: Dict[str, Any]) -> Dict[str, Any]:
     """
     Interpret a shot-on-goal event and return structured LLM-ready data.
@@ -16,21 +17,16 @@ def interpret_shot_on_goal(event: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "event_type": "shot-on-goal",
-        "players": {
-            "shooter_id": details.get("shootingPlayerId")
-        },
+        "players": {"shooter_id": details.get("shootingPlayerId")},
         "goalie_id": details.get("goalieInNetId"),
         "team_id": details.get("eventOwnerTeamId"),
         "shot_on_goals": {
             "home": details.get("homeSOG", 0),
-            "away": details.get("awaySOG", 0)
+            "away": details.get("awaySOG", 0),
         },
         "period": period,
         "time": time,
         "zone": details.get("zoneCode"),
         "shot_type": details.get("shotType"),
-        "location": {
-            "x": details.get("xCoord"),
-            "y": details.get("yCoord")
-        }
+        "location": {"x": details.get("xCoord"), "y": details.get("yCoord")},
     }

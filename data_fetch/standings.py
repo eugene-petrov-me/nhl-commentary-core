@@ -1,4 +1,5 @@
 """Fetch current standings for two teams from the NHL API."""
+
 from __future__ import annotations
 
 import logging
@@ -29,17 +30,16 @@ def get_standings(date: str, *, home_abbr: str, away_abbr: str) -> List[dict]:
         data = client.standings.get_standings(date=date)
     except Exception as exc:
         logger.warning("Standings request failed for %s: %s", date, exc)
-        raise StandingsFetchError(f"Failed to fetch standings for {date}: {exc}") from exc
+        raise StandingsFetchError(
+            f"Failed to fetch standings for {date}: {exc}"
+        ) from exc
 
     if not data:
         return []
 
     all_standings = data.get("standings") or []
     abbrevs = {home_abbr, away_abbr}
-    return [
-        s for s in all_standings
-        if _abbrev(s) in abbrevs
-    ]
+    return [s for s in all_standings if _abbrev(s) in abbrevs]
 
 
 def _abbrev(entry: dict) -> str:

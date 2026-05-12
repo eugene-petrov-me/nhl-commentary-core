@@ -14,6 +14,7 @@ except Exception:  # pragma: no cover - optional dependency
 
 logger = logging.getLogger(__name__)
 
+
 class ScheduleFetchError(Exception):
     """Raised when fetching the schedule fails."""
 
@@ -56,9 +57,9 @@ def get_schedule(
             game_id=g.get("id"),
             season_id=g.get("season"),
             game_type=g.get("gameType"),
-            home_team=(g.get("homeTeam") or {}).get("abbrev"),
+            home_team=(g.get("homeTeam") or {}).get("abbrev") or "",
             home_team_score=(g.get("homeTeam") or {}).get("score"),
-            away_team=(g.get("awayTeam") or {}).get("abbrev"),
+            away_team=(g.get("awayTeam") or {}).get("abbrev") or "",
             away_team_score=(g.get("awayTeam") or {}).get("score"),
             winning_goal_scorer_id=(g.get("winningGoalScorer") or {}).get("playerId"),
         )
@@ -80,7 +81,7 @@ def get_schedule(
                     game_id=s.game_id,
                     away=s.away_team,
                     home=s.home_team,
-                    artifact="raw_pbp",   # set to False to ensure key exists
+                    artifact="raw_pbp",  # set to False to ensure key exists
                     exists=False,
                 )
                 # Also ensure 'raw_story' key exists (False) so your
@@ -95,7 +96,10 @@ def get_schedule(
             except Exception:
                 # Non-fatal; schedule fetch should not fail due to index writes
                 logger.warning(
-                    "Failed to seed index for game %s on %s", s.game_id, date, exc_info=True
+                    "Failed to seed index for game %s on %s",
+                    s.game_id,
+                    date,
+                    exc_info=True,
                 )
 
     return schedules

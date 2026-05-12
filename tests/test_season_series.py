@@ -1,4 +1,5 @@
 """Tests for data_fetch.season_series."""
+
 import sys
 from types import SimpleNamespace
 
@@ -10,7 +11,9 @@ fake_storage = SimpleNamespace(Client=lambda: None, Bucket=SimpleNamespace)
 fake_exceptions = SimpleNamespace(NotFound=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -60,9 +63,12 @@ def test_get_season_series_handles_none_response(monkeypatch):
 
 
 def test_get_season_series_raises_on_client_error(monkeypatch):
-    monkeypatch.setattr(series_mod, "NHLClient", lambda: (_ for _ in ()).throw(RuntimeError("fail")))
+    monkeypatch.setattr(
+        series_mod, "NHLClient", lambda: (_ for _ in ()).throw(RuntimeError("fail"))
+    )
 
     import pytest
+
     with pytest.raises(SeasonSeriesFetchError, match="Failed to create NHL client"):
         get_season_series(2024020001)
 
@@ -78,5 +84,6 @@ def test_get_season_series_raises_on_api_error(monkeypatch):
     )
 
     import pytest
+
     with pytest.raises(SeasonSeriesFetchError, match="Failed to fetch right_rail"):
         get_season_series(2024020001)

@@ -1,4 +1,5 @@
 """High-level game summarization utilities."""
+
 from __future__ import annotations
 
 import logging
@@ -73,7 +74,9 @@ def summarize_game(
         standings = None
         try:
             if date and away_abbr and home_abbr:
-                standings = get_standings(date, home_abbr=home_abbr, away_abbr=away_abbr)
+                standings = get_standings(
+                    date, home_abbr=home_abbr, away_abbr=away_abbr
+                )
         except StandingsFetchError:
             logger.warning(
                 "Standings fetch failed for game %s; proceeding without it",
@@ -92,7 +95,11 @@ def summarize_game(
             )
 
         ai_text = generate_ai_summary(
-            pbp, story, editorial=editorial, standings=standings, season_series=season_series
+            pbp,
+            story,
+            editorial=editorial,
+            standings=standings,
+            season_series=season_series,
         )
         save_ai_summary(game_id=game_id, md=ai_text, date=date)
 

@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+
 def interpret_penalty(event: Dict[str, Any]) -> Dict[str, Any]:
     """
     Interpret a penalty event and return structured LLM-ready data.
@@ -18,7 +19,7 @@ def interpret_penalty(event: Dict[str, Any]) -> Dict[str, Any]:
         "event_type": "penalty",
         "players": {
             "committed_player_id": details.get("committedByPlayerId"),
-            "drawn_player_id": details.get("drawnByPlayerId")
+            "drawn_player_id": details.get("drawnByPlayerId"),
         },
         "team_id": details.get("eventOwnerTeamId"),
         "period": period,
@@ -29,8 +30,5 @@ def interpret_penalty(event: Dict[str, Any]) -> Dict[str, Any]:
             "reason": details.get("descKey"),
             "duration": details.get("duration"),
         },
-        "location": {
-            "x": details.get("xCoord"),
-            "y": details.get("yCoord")
-        }
+        "location": {"x": details.get("xCoord"), "y": details.get("yCoord")},
     }

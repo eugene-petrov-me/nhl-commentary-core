@@ -10,19 +10,25 @@ import config
 fake_nhlpy = SimpleNamespace(NHLClient=lambda: SimpleNamespace())
 sys.modules.setdefault("nhlpy", fake_nhlpy)
 
+
 class _FakeStorageClient:
     def bucket(self, *a, **kw):
-        return SimpleNamespace(blob=lambda *a, **kw: SimpleNamespace(
-            exists=lambda: False,
-            download_as_text=lambda: "",
-            upload_from_string=lambda *a, **kw: None,
-        ))
+        return SimpleNamespace(
+            blob=lambda *a, **kw: SimpleNamespace(
+                exists=lambda: False,
+                download_as_text=lambda: "",
+                upload_from_string=lambda *a, **kw: None,
+            )
+        )
+
 
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
 fake_exceptions = SimpleNamespace(NotFound=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -67,7 +73,11 @@ def _make_summary(game_id: int) -> GameSummary:
 def test_single_game_success(monkeypatch):
     game = _make_game(100)
     monkeypatch.setattr(batch_mod, "get_schedule", lambda date: [game])
-    monkeypatch.setattr(batch_mod, "summarize_game", lambda game_id, date, use_ai: _make_summary(game_id))
+    monkeypatch.setattr(
+        batch_mod,
+        "summarize_game",
+        lambda game_id, date, use_ai: _make_summary(game_id),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         results = batch_mod.summarize_date("2025-04-25")
@@ -84,7 +94,11 @@ def test_single_game_success(monkeypatch):
 def test_multiple_games(monkeypatch):
     games = [_make_game(1), _make_game(2), _make_game(3)]
     monkeypatch.setattr(batch_mod, "get_schedule", lambda date: games)
-    monkeypatch.setattr(batch_mod, "summarize_game", lambda game_id, date, use_ai: _make_summary(game_id))
+    monkeypatch.setattr(
+        batch_mod,
+        "summarize_game",
+        lambda game_id, date, use_ai: _make_summary(game_id),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         results = batch_mod.summarize_date("2025-04-25")

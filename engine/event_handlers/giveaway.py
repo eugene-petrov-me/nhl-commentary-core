@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+
 def interpret_giveaway(event: Dict[str, Any]) -> Dict[str, Any]:
     """Interpret a giveaway event and return structured LLM-ready data."""
     details = event.get("details", {})

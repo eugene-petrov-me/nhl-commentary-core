@@ -1,4 +1,5 @@
 """Tests for data_fetch.standings."""
+
 import sys
 from types import SimpleNamespace
 
@@ -10,7 +11,9 @@ fake_storage = SimpleNamespace(Client=lambda: None, Bucket=SimpleNamespace)
 fake_exceptions = SimpleNamespace(NotFound=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
-sys.modules.setdefault("google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core))
+sys.modules.setdefault(
+    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+)
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
@@ -109,6 +112,7 @@ def test_get_standings_raises_on_api_error(monkeypatch):
     monkeypatch.setattr(standings_mod, "NHLClient", bad_client)
 
     import pytest
+
     with pytest.raises(StandingsFetchError, match="Failed to create NHL client"):
         get_standings("2025-04-25", home_abbr="MTL", away_abbr="COL")
 
@@ -120,9 +124,12 @@ def test_get_standings_raises_on_fetch_error(monkeypatch):
     monkeypatch.setattr(
         standings_mod,
         "NHLClient",
-        lambda: SimpleNamespace(standings=SimpleNamespace(get_standings=bad_get_standings)),
+        lambda: SimpleNamespace(
+            standings=SimpleNamespace(get_standings=bad_get_standings)
+        ),
     )
 
     import pytest
+
     with pytest.raises(StandingsFetchError, match="Failed to fetch standings"):
         get_standings("2025-04-25", home_abbr="MTL", away_abbr="COL")

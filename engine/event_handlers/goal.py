@@ -1,5 +1,6 @@
 from typing import Dict, Any
 
+
 def interpret_goal(event: Dict[str, Any]) -> Dict[str, Any]:
     """
     Interpret a goal event and return structured LLM-ready data.
@@ -20,22 +21,19 @@ def interpret_goal(event: Dict[str, Any]) -> Dict[str, Any]:
             "scorer_id": details.get("scoringPlayerId"),
             "assist_ids": [
                 details.get("assist1PlayerId"),
-                details.get("assist2PlayerId")
-            ]
+                details.get("assist2PlayerId"),
+            ],
         },
         "goalie_id": details.get("goalieInNetId"),
         "team_id": details.get("eventOwnerTeamId"),
         "score": {
             "home": details.get("homeScore", 0),
-            "away": details.get("awayScore", 0)
+            "away": details.get("awayScore", 0),
         },
         "period": period,
         "time": time,
         "zone": details.get("zoneCode"),
         "shot_type": details.get("shotType"),
-        "location": {
-            "x": details.get("xCoord"),
-            "y": details.get("yCoord")
-        },
-        "highlight": details.get("highlightClipSharingUrl")
+        "location": {"x": details.get("xCoord"), "y": details.get("yCoord")},
+        "highlight": details.get("highlightClipSharingUrl"),
     }

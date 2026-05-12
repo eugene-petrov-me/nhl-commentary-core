@@ -1,4 +1,5 @@
 """Centralized runtime configuration for nhl-commentary-core."""
+
 from __future__ import annotations
 
 import os

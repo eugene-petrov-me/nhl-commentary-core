@@ -17,6 +17,7 @@ logger = logging.getLogger(__name__)
 def _bucket_name() -> str:
     return get_settings().gcs_bucket_name
 
+
 GS_BLOB = "raw/game_story/{game_id}.json"
 
 
@@ -45,7 +46,12 @@ def _infer_date(story: Dict[str, Any]) -> Optional[str]:
     # e.g. "/gamecenter/col-vs-mtl/2025/04/25/2024030133"
     if isinstance(gcl, str):
         parts = gcl.strip("/").split("/")
-        if len(parts) >= 5 and parts[2].isdigit() and parts[3].isdigit() and parts[4].isdigit():
+        if (
+            len(parts) >= 5
+            and parts[2].isdigit()
+            and parts[3].isdigit()
+            and parts[4].isdigit()
+        ):
             # parts[2:5] -> YYYY/MM/DD
             return "-".join(parts[2:5])
     return None
@@ -58,13 +64,15 @@ def _infer_abbrs(story: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
     return away, home
 
 
-def _maybe_mark_index(story: Dict[str, Any],
-                      *,
-                      game_id: int,
-                      date: Optional[str],
-                      away_abbr: Optional[str],
-                      home_abbr: Optional[str],
-                      mark: bool) -> None:
+def _maybe_mark_index(
+    story: Dict[str, Any],
+    *,
+    game_id: int,
+    date: Optional[str],
+    away_abbr: Optional[str],
+    home_abbr: Optional[str],
+    mark: bool,
+) -> None:
     """Best-effort update of the date index for raw_story."""
     if not mark:
         return
@@ -72,7 +80,7 @@ def _maybe_mark_index(story: Dict[str, Any],
     a, h = _infer_abbrs(story)
     away = away_abbr or a
     home = home_abbr or h
-    if d and mark_artifact:
+    if d:
         try:
             mark_artifact(
                 _bucket_name(),
@@ -85,7 +93,10 @@ def _maybe_mark_index(story: Dict[str, Any],
             )
         except Exception:
             logger.warning(
-                "Failed to mark raw_story index for game %s on %s", game_id, d, exc_info=True
+                "Failed to mark raw_story index for game %s on %s",
+                game_id,
+                d,
+                exc_info=True,
             )
 
 
@@ -93,10 +104,10 @@ def get_game_story(
     game_id: int,
     *,
     force_refresh: bool = False,
-    date: Optional[str] = None,       # "YYYY-MM-DD" for index (optional)
+    date: Optional[str] = None,  # "YYYY-MM-DD" for index (optional)
     away_abbr: Optional[str] = None,  # optional for index
     home_abbr: Optional[str] = None,
-    mark_index: bool = True,          # toggle index marking
+    mark_index: bool = True,  # toggle index marking
 ) -> Dict[str, Any]:
     """
     Fetch the game story data for a specific NHL game, using GCS as a cache.
@@ -122,9 +133,14 @@ def get_game_story(
         try:
             cached = download_json(bucket, blob_path)
             if _looks_like_gs(cached):
-                _maybe_mark_index(cached, game_id=game_id,
-                                  date=date, away_abbr=away_abbr, home_abbr=home_abbr,
-                                  mark=mark_index)
+                _maybe_mark_index(
+                    cached,
+                    game_id=game_id,
+                    date=date,
+                    away_abbr=away_abbr,
+                    home_abbr=home_abbr,
+                    mark=mark_index,
+                )
                 return cached
         except Exception:
             # Ignore cache errors; fall back to API
@@ -151,9 +167,14 @@ def get_game_story(
                 "Failed to upload game story cache for game %s", game_id, exc_info=True
             )
 
-        _maybe_mark_index(story, game_id=game_id,
-                          date=date, away_abbr=away_abbr, home_abbr=home_abbr,
-                          mark=mark_index)
+        _maybe_mark_index(
+            story,
+            game_id=game_id,
+            date=date,
+            away_abbr=away_abbr,
+            home_abbr=home_abbr,
+            mark=mark_index,
+        )
         return story
 
     except Exception as exc:

@@ -1,6 +1,5 @@
 """Tests for models.game_summary.GameSummary."""
 
-import json
 from datetime import datetime, timezone
 
 import pytest
@@ -66,7 +65,14 @@ def test_invalid_summary_type_raises():
 def test_model_copy_enrichment():
     gs = _make()
     assert gs.home_team is None
-    enriched = gs.model_copy(update={"home_team": "MTL", "away_team": "COL", "home_score": 3, "away_score": 2})
+    enriched = gs.model_copy(
+        update={
+            "home_team": "MTL",
+            "away_team": "COL",
+            "home_score": 3,
+            "away_score": 2,
+        }
+    )
     assert enriched.home_team == "MTL"
     assert enriched.away_score == 2
     # Original unchanged

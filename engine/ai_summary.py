@@ -31,7 +31,7 @@ def _load_template(name: str) -> str:
 def _ordinal(n: object) -> str:
     """Return ordinal suffix for an integer (1 → 'st', 2 → 'nd', etc.)."""
     try:
-        i = int(n)  # type: ignore[arg-type]
+        i = int(n)  # type: ignore[call-overload]
     except (TypeError, ValueError):
         return ""
     if 11 <= (i % 100) <= 13:
@@ -48,12 +48,12 @@ def _format_standings(standings: List[dict]) -> str:
         div_rank = s.get("divisionSequence", "?")
         div = s.get("divisionName", "?")
         w = s.get("wins", 0)
-        l = s.get("losses", 0)
+        losses = s.get("losses", 0)
         ot = s.get("otLosses", 0)
         pts = s.get("points", 0)
         streak = f"{s.get('streakCode', '')}{s.get('streakCount', '')}"
         lines.append(
-            f"{abbrev}: {div_rank}{_ordinal(div_rank)} {div} | {w}W-{l}L-{ot}OT | {pts}pts | Streak: {streak}"
+            f"{abbrev}: {div_rank}{_ordinal(div_rank)} {div} | {w}W-{losses}L-{ot}OT | {pts}pts | Streak: {streak}"
         )
     return "\n".join(lines) if lines else "Standings unavailable."
 
@@ -107,9 +107,13 @@ def generate_ai_summary(
         if editorial
         else "No editorial recap available."
     )
-    standings_text = _format_standings(standings) if standings else "Standings unavailable."
+    standings_text = (
+        _format_standings(standings) if standings else "Standings unavailable."
+    )
     series_text = (
-        _format_season_series(season_series) if season_series else "Season series data unavailable."
+        _format_season_series(season_series)
+        if season_series
+        else "Season series data unavailable."
     )
     populated = template.format(
         play_by_play=json.dumps(play_by_play, indent=2),
