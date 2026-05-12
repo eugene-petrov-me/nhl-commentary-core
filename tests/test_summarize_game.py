@@ -66,21 +66,30 @@ def test_summarize_game_rule_based(monkeypatch):
     assert result.cached is False
 
 
+def _patch_ai_deps(monkeypatch, pbp=None, story=None):
+    """Patch all AI-path dependencies with safe defaults."""
+    monkeypatch.setattr("engine.summarize_game.load_ai_summary", lambda game_id: None)
+    monkeypatch.setattr("engine.summarize_game.save_ai_summary", lambda **kw: None)
+    monkeypatch.setattr("engine.summarize_game.get_play_by_play", lambda game_id: pbp or {})
+    monkeypatch.setattr("engine.summarize_game.get_game_story", lambda game_id: story or {})
+    monkeypatch.setattr("engine.summarize_game.get_editorial", lambda game_id, **kw: None)
+    monkeypatch.setattr("engine.summarize_game.get_standings", lambda date, **kw: [])
+    monkeypatch.setattr("engine.summarize_game.get_season_series", lambda game_id: {})
+
+
 def test_summarize_game_ai(monkeypatch):
-    def fake_generate_ai_summary(play_by_play, game_story, editorial=None):
-        assert play_by_play == ["event"]
-        assert game_story == {"story": "data"}
+    fake_pbp = {"plays": ["event"], "awayTeam": {"abbrev": "COL"}, "homeTeam": {"abbrev": "MTL"}}
+    fake_story = {"story": "data"}
+
+    def fake_generate_ai_summary(play_by_play, game_story, editorial=None, standings=None, season_series=None):
+        assert play_by_play == fake_pbp
+        assert game_story == fake_story
         return "ai summary"
 
-    monkeypatch.setattr("engine.summarize_game.process_game_events", lambda gid: ["event"])
+    _patch_ai_deps(monkeypatch, pbp=fake_pbp, story=fake_story)
     monkeypatch.setattr("engine.summarize_game.get_or_build_stats_summary",
                         lambda **kw: (_ for _ in ()).throw(AssertionError("should not be called")))
     monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate_ai_summary)
-    monkeypatch.setattr("engine.summarize_game.get_play_by_play", lambda game_id: ["event"])
-    monkeypatch.setattr("engine.summarize_game.get_game_story", lambda game_id: {"story": "data"})
-    monkeypatch.setattr("engine.summarize_game.get_editorial", lambda game_id, **kw: None)
-    monkeypatch.setattr("engine.summarize_game.load_ai_summary", lambda game_id: None)
-    monkeypatch.setattr("engine.summarize_game.save_ai_summary", lambda **kw: None)
 
     result = engine.summarize_game.summarize_game(2, use_ai=True)
 
@@ -102,18 +111,77 @@ def test_summarize_game_ai_cache_hit(monkeypatch):
 def test_summarize_game_ai_includes_editorial_fields(monkeypatch):
     editorial = {"headline": "Big win", "summary": "Short recap.", "body": "Long body."}
 
-    monkeypatch.setattr("engine.summarize_game.load_ai_summary", lambda game_id: None)
-    monkeypatch.setattr("engine.summarize_game.get_play_by_play", lambda gid: {})
-    monkeypatch.setattr("engine.summarize_game.get_game_story", lambda gid: {})
+    _patch_ai_deps(monkeypatch)
     monkeypatch.setattr("engine.summarize_game.get_editorial", lambda gid, **kw: editorial)
     monkeypatch.setattr("engine.summarize_game.generate_ai_summary",
-                        lambda pbp, story, editorial=None: "summary")
-    monkeypatch.setattr("engine.summarize_game.save_ai_summary", lambda **kw: None)
+                        lambda pbp, story, editorial=None, standings=None, season_series=None: "summary")
 
     result = engine.summarize_game.summarize_game(4, use_ai=True)
 
     assert result.editorial_headline == "Big win"
     assert result.editorial_summary == "Short recap."
+
+
+def test_summarize_game_passes_standings_and_series(monkeypatch):
+    """standings and season_series are fetched and forwarded to generate_ai_summary."""
+    fake_standings = [{"teamAbbrev": "MTL"}]
+    fake_series = {"seasonSeries": [], "seasonSeriesWins": {}}
+    received = {}
+
+    def fake_generate(pbp, story, editorial=None, standings=None, season_series=None):
+        received["standings"] = standings
+        received["season_series"] = season_series
+        return "summary"
+
+    pbp = {"awayTeam": {"abbrev": "COL"}, "homeTeam": {"abbrev": "MTL"}}
+    _patch_ai_deps(monkeypatch, pbp=pbp)
+    monkeypatch.setattr("engine.summarize_game.get_standings", lambda date, **kw: fake_standings)
+    monkeypatch.setattr("engine.summarize_game.get_season_series", lambda gid: fake_series)
+    monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate)
+
+    engine.summarize_game.summarize_game(6, date="2025-04-25", use_ai=True)
+
+    assert received["standings"] == fake_standings
+    assert received["season_series"] == fake_series
+
+
+def test_summarize_game_standings_failure_is_non_fatal(monkeypatch):
+    """StandingsFetchError is caught; summarization proceeds with standings=None."""
+    from data_fetch.standings import StandingsFetchError
+    received = {}
+
+    def fake_generate(pbp, story, editorial=None, standings=None, season_series=None):
+        received["standings"] = standings
+        return "summary"
+
+    pbp = {"awayTeam": {"abbrev": "COL"}, "homeTeam": {"abbrev": "MTL"}}
+    _patch_ai_deps(monkeypatch, pbp=pbp)
+    monkeypatch.setattr("engine.summarize_game.get_standings",
+                        lambda date, **kw: (_ for _ in ()).throw(StandingsFetchError("fail")))
+    monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate)
+
+    engine.summarize_game.summarize_game(7, date="2025-04-25", use_ai=True)
+
+    assert received["standings"] is None
+
+
+def test_summarize_game_season_series_failure_is_non_fatal(monkeypatch):
+    """SeasonSeriesFetchError is caught; summarization proceeds with season_series=None."""
+    from data_fetch.season_series import SeasonSeriesFetchError
+    received = {}
+
+    def fake_generate(pbp, story, editorial=None, standings=None, season_series=None):
+        received["season_series"] = season_series
+        return "summary"
+
+    _patch_ai_deps(monkeypatch)
+    monkeypatch.setattr("engine.summarize_game.get_season_series",
+                        lambda gid: (_ for _ in ()).throw(SeasonSeriesFetchError("fail")))
+    monkeypatch.setattr("engine.summarize_game.generate_ai_summary", fake_generate)
+
+    engine.summarize_game.summarize_game(8, date="2025-04-25", use_ai=True)
+
+    assert received["season_series"] is None
 
 
 def test_summarize_game_fetch_failure_propagates(monkeypatch):

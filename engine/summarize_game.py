@@ -11,6 +11,8 @@ from .ai_summary import generate_ai_summary
 from data_fetch.play_by_play import get_play_by_play
 from data_fetch.game_story import get_game_story
 from data_fetch.editorial import get_editorial, EditorialFetchError
+from data_fetch.standings import get_standings, StandingsFetchError
+from data_fetch.season_series import get_season_series, SeasonSeriesFetchError
 from .summaries import (
     get_or_build_stats_summary,
     save_ai_summary,
@@ -62,10 +64,36 @@ def summarize_game(
             logger.warning(
                 "Editorial fetch failed for game %s; proceeding without it",
                 game_id,
-                exc_info=True,
+                exc_info=False,
             )
 
-        ai_text = generate_ai_summary(pbp, story, editorial=editorial)
+        away_abbr = (pbp.get("awayTeam") or {}).get("abbrev")
+        home_abbr = (pbp.get("homeTeam") or {}).get("abbrev")
+
+        standings = None
+        try:
+            if date and away_abbr and home_abbr:
+                standings = get_standings(date, home_abbr=home_abbr, away_abbr=away_abbr)
+        except StandingsFetchError:
+            logger.warning(
+                "Standings fetch failed for game %s; proceeding without it",
+                game_id,
+                exc_info=False,
+            )
+
+        season_series = None
+        try:
+            season_series = get_season_series(game_id)
+        except SeasonSeriesFetchError:
+            logger.warning(
+                "Season series fetch failed for game %s; proceeding without it",
+                game_id,
+                exc_info=False,
+            )
+
+        ai_text = generate_ai_summary(
+            pbp, story, editorial=editorial, standings=standings, season_series=season_series
+        )
         save_ai_summary(game_id=game_id, md=ai_text, date=date)
 
         return GameSummary(
