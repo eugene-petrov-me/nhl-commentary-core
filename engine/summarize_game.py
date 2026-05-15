@@ -24,7 +24,9 @@ from .summaries import (
 logger = logging.getLogger(__name__)
 
 
-def _safe_result(fut: Future, exc_type: Type[Exception], label: str, game_id: int) -> Optional[Any]:
+def _safe_result(
+    fut: Future, exc_type: Type[Exception], label: str, game_id: int
+) -> Optional[Any]:
     try:
         return fut.result()
     except exc_type:
@@ -96,11 +98,16 @@ def summarize_game(
                 executor.shutdown(wait=False, cancel_futures=True)
                 raise
 
-            editorial = _safe_result(editorial_fut, EditorialFetchError, "Editorial", game_id)
-            season_series = _safe_result(series_fut, SeasonSeriesFetchError, "Season series", game_id)
+            editorial = _safe_result(
+                editorial_fut, EditorialFetchError, "Editorial", game_id
+            )
+            season_series = _safe_result(
+                series_fut, SeasonSeriesFetchError, "Season series", game_id
+            )
             standings = (
                 _safe_result(standings_fut, StandingsFetchError, "Standings", game_id)
-                if standings_fut else None
+                if standings_fut
+                else None
             )
 
         ai_text = generate_ai_summary(
