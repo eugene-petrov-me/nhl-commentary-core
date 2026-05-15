@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import logging
+from concurrent.futures import ThreadPoolExecutor, Future
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Any, Optional, Type
 
 from models.game_summary import GameSummary
 from .process_game import process_game_events
@@ -21,6 +22,22 @@ from .summaries import (
 )
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_result(
+    fut: Future, exc_type: Type[Exception], label: str, game_id: int
+) -> Optional[Any]:
+    try:
+        return fut.result()
+    except exc_type:
+        logger.warning(
+            "%s fetch failed for game %s; proceeding without it",
+            label,
+            game_id,
+            exc_info=False,
+        )
+        logger.debug("%s fetch error detail for game %s", label, game_id, exc_info=True)
+        return None
 
 
 def summarize_game(
@@ -54,44 +71,35 @@ def summarize_game(
                 cached=True,
             )
 
-        # 2) Fetch all data, generate, cache
-        pbp = get_play_by_play(game_id)
-        story = get_game_story(game_id)
+        # 2) Fetch all data in parallel, generate, cache
+        with ThreadPoolExecutor(max_workers=5) as executor:
+            pbp_fut = executor.submit(get_play_by_play, game_id)
+            story_fut = executor.submit(get_game_story, game_id)
+            editorial_fut = executor.submit(get_editorial, game_id, date=date)
+            series_fut = executor.submit(get_season_series, game_id)
 
-        editorial = None
-        try:
-            editorial = get_editorial(game_id, date=date)
-        except EditorialFetchError:
-            logger.warning(
-                "Editorial fetch failed for game %s; proceeding without it",
-                game_id,
-                exc_info=False,
-            )
+            pbp = pbp_fut.result()  # required — propagates on failure
+            away_abbr = (pbp.get("awayTeam") or {}).get("abbrev")
+            home_abbr = (pbp.get("homeTeam") or {}).get("abbrev")
 
-        away_abbr = (pbp.get("awayTeam") or {}).get("abbrev")
-        home_abbr = (pbp.get("homeTeam") or {}).get("abbrev")
-
-        standings = None
-        try:
+            standings_fut: Optional[Future] = None
             if date and away_abbr and home_abbr:
-                standings = get_standings(
-                    date, home_abbr=home_abbr, away_abbr=away_abbr
+                standings_fut = executor.submit(
+                    get_standings, date, home_abbr=home_abbr, away_abbr=away_abbr
                 )
-        except StandingsFetchError:
-            logger.warning(
-                "Standings fetch failed for game %s; proceeding without it",
-                game_id,
-                exc_info=False,
-            )
 
-        season_series = None
-        try:
-            season_series = get_season_series(game_id)
-        except SeasonSeriesFetchError:
-            logger.warning(
-                "Season series fetch failed for game %s; proceeding without it",
-                game_id,
-                exc_info=False,
+            story = story_fut.result()  # required — propagates on failure
+
+            editorial = _safe_result(
+                editorial_fut, EditorialFetchError, "Editorial", game_id
+            )
+            season_series = _safe_result(
+                series_fut, SeasonSeriesFetchError, "Season series", game_id
+            )
+            standings = (
+                _safe_result(standings_fut, StandingsFetchError, "Standings", game_id)
+                if standings_fut
+                else None
             )
 
         ai_text = generate_ai_summary(
