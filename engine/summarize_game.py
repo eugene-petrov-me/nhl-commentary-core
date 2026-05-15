@@ -36,6 +36,7 @@ def _safe_result(
             game_id,
             exc_info=False,
         )
+        logger.debug("%s fetch error detail for game %s", label, game_id, exc_info=True)
         return None
 
 
@@ -71,18 +72,13 @@ def summarize_game(
             )
 
         # 2) Fetch all data in parallel, generate, cache
-        with ThreadPoolExecutor() as executor:
+        with ThreadPoolExecutor(max_workers=5) as executor:
             pbp_fut = executor.submit(get_play_by_play, game_id)
             story_fut = executor.submit(get_game_story, game_id)
             editorial_fut = executor.submit(get_editorial, game_id, date=date)
             series_fut = executor.submit(get_season_series, game_id)
 
-            try:
-                pbp = pbp_fut.result()  # required — propagates on failure
-            except Exception:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
-
+            pbp = pbp_fut.result()  # required — propagates on failure
             away_abbr = (pbp.get("awayTeam") or {}).get("abbrev")
             home_abbr = (pbp.get("homeTeam") or {}).get("abbrev")
 
@@ -92,11 +88,7 @@ def summarize_game(
                     get_standings, date, home_abbr=home_abbr, away_abbr=away_abbr
                 )
 
-            try:
-                story = story_fut.result()  # required — propagates on failure
-            except Exception:
-                executor.shutdown(wait=False, cancel_futures=True)
-                raise
+            story = story_fut.result()  # required — propagates on failure
 
             editorial = _safe_result(
                 editorial_fut, EditorialFetchError, "Editorial", game_id
