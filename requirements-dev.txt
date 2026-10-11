@@ -1,4 +1,4 @@
 -r requirements.txt
 pytest
 ruff==0.15.12
-mypy
+mypy==2.4.0
