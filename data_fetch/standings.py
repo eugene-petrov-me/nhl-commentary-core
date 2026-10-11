@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import logging
-from typing import List
 
 from nhlpy import NHLClient
 
@@ -14,7 +13,7 @@ class StandingsFetchError(Exception):
     """Raised when fetching standings fails."""
 
 
-def get_standings(date: str, *, home_abbr: str, away_abbr: str) -> List[dict]:
+def get_standings(date: str, *, home_abbr: str, away_abbr: str) -> list[dict]:
     """Return standings entries for the home and away teams.
 
     Filters the full league standings to the two teams. Returns an empty list

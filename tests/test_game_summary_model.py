@@ -1,23 +1,23 @@
 """Tests for models.game_summary.GameSummary."""
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from pydantic import ValidationError
 
 from models.game_summary import GameSummary
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 def _make(**kwargs) -> GameSummary:
-    defaults = dict(
-        game_id=2024020001,
-        summary_markdown="Great game.",
-        summary_type="ai",
-        generated_at=NOW,
-        cached=False,
-    )
+    defaults = {
+        "game_id": 2024020001,
+        "summary_markdown": "Great game.",
+        "summary_type": "ai",
+        "generated_at": NOW,
+        "cached": False,
+    }
     defaults.update(kwargs)
     return GameSummary(**defaults)
 

@@ -1,5 +1,6 @@
+from datetime import UTC, datetime
+
 import pytest
-from datetime import datetime, timezone
 
 import main
 from models.game_schedule import GameSchedule
@@ -24,7 +25,7 @@ def make_game_summary(game_id: int, markdown: str = "") -> GameSummary:
         game_id=game_id,
         summary_markdown=markdown or f"summary-{game_id}",
         summary_type="rule_based",
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         cached=False,
     )
 

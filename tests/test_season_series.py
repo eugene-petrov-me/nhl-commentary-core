@@ -19,8 +19,8 @@ sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 
-import data_fetch.season_series as series_mod  # noqa: E402
-from data_fetch.season_series import SeasonSeriesFetchError, get_season_series  # noqa: E402
+import data_fetch.season_series as series_mod
+from data_fetch.season_series import SeasonSeriesFetchError, get_season_series
 
 
 def _fake_right_rail(response: dict):

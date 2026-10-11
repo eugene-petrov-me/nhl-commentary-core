@@ -1,8 +1,9 @@
-from typing import Dict, Any
+from typing import Any
+
 from .event_handlers import EVENT_HANDLERS
 
 
-def transform_event(event: Dict[str, Any]) -> Dict[str, Any]:
+def transform_event(event: dict[str, Any]) -> dict[str, Any]:
     """
     Transform a raw event into a structured format using the appropriate handler.
 

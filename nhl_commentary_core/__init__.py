@@ -4,18 +4,18 @@ from .cli import (
     DEFAULT_DATE,
     GameSelectionError,
     SummaryResult,
-    get_schedule,
     generate_summary_for_date,
-    summarize_game,
+    get_schedule,
     main,
+    summarize_game,
 )
 
 __all__ = [
     "DEFAULT_DATE",
     "GameSelectionError",
     "SummaryResult",
-    "get_schedule",
     "generate_summary_for_date",
-    "summarize_game",
+    "get_schedule",
     "main",
+    "summarize_game",
 ]

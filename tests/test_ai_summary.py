@@ -42,8 +42,7 @@ sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 sys.modules.setdefault("google.genai", fake_genai)
 sys.modules.setdefault("google.genai.types", fake_genai_types)
 
-import engine.ai_summary  # noqa: E402 — must come after sys.modules stubs
-
+import engine.ai_summary  # must come after sys.modules stubs
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
@@ -264,7 +263,7 @@ def test_generate_ai_summary_no_series_uses_fallback(monkeypatch):
 
 def test_generate_ai_summary_handles_error(monkeypatch):
     def fake_generate(**kw):
-        raise Exception("boom")
+        raise ConnectionError("boom")
 
     monkeypatch.setattr(
         engine.ai_summary,
@@ -272,9 +271,11 @@ def test_generate_ai_summary_handles_error(monkeypatch):
         lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
     )
 
-    with config.override_settings(TEST_SETTINGS):
-        with pytest.raises(RuntimeError, match="boom"):
-            engine.ai_summary.generate_ai_summary({}, {})
+    with (
+        config.override_settings(TEST_SETTINGS),
+        pytest.raises(RuntimeError, match="boom"),
+    ):
+        engine.ai_summary.generate_ai_summary({}, {})
 
 
 @pytest.mark.parametrize("text", [None, "", "   \n\t "])
@@ -290,6 +291,8 @@ def test_generate_ai_summary_empty_response_raises(monkeypatch, text):
         ),
     )
 
-    with config.override_settings(TEST_SETTINGS):
-        with pytest.raises(RuntimeError, match="empty response"):
-            engine.ai_summary.generate_ai_summary({}, {})
+    with (
+        config.override_settings(TEST_SETTINGS),
+        pytest.raises(RuntimeError, match="empty response"),
+    ):
+        engine.ai_summary.generate_ai_summary({}, {})

@@ -3,30 +3,31 @@
 from __future__ import annotations
 
 import logging
-from concurrent.futures import ThreadPoolExecutor, Future
-from datetime import datetime, timezone
-from typing import Any, Optional, Type
+from concurrent.futures import Future, ThreadPoolExecutor
+from datetime import UTC, datetime
+from typing import Any
 
-from models.game_summary import GameSummary
-from .process_game import process_game_events
-from .ai_summary import generate_ai_summary
-from data_fetch.play_by_play import get_play_by_play
+from data_fetch.editorial import EditorialFetchError, get_editorial
 from data_fetch.game_story import get_game_story
-from data_fetch.editorial import get_editorial, EditorialFetchError
-from data_fetch.standings import get_standings, StandingsFetchError
-from data_fetch.season_series import get_season_series, SeasonSeriesFetchError
+from data_fetch.play_by_play import get_play_by_play
+from data_fetch.season_series import SeasonSeriesFetchError, get_season_series
+from data_fetch.standings import StandingsFetchError, get_standings
+from models.game_summary import GameSummary
+
+from .ai_summary import generate_ai_summary
+from .process_game import process_game_events
 from .summaries import (
     get_or_build_stats_summary,
-    save_ai_summary,
     load_ai_summary,
+    save_ai_summary,
 )
 
 logger = logging.getLogger(__name__)
 
 
 def _safe_result(
-    fut: Future, exc_type: Type[Exception], label: str, game_id: int
-) -> Optional[Any]:
+    fut: Future, exc_type: type[Exception], label: str, game_id: int
+) -> Any | None:
     try:
         return fut.result()
     except exc_type:
@@ -42,7 +43,7 @@ def _safe_result(
 
 def summarize_game(
     game_id: int,
-    date: Optional[str] = None,
+    date: str | None = None,
     use_ai: bool = True,
 ) -> GameSummary:
     """Return a structured summary for the specified game.
@@ -56,7 +57,7 @@ def summarize_game(
     Returns:
         GameSummary with summary_markdown and metadata.
     """
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
 
     if use_ai:
         # 1) Try loading from GCS cache
@@ -82,7 +83,7 @@ def summarize_game(
             away_abbr = (pbp.get("awayTeam") or {}).get("abbrev")
             home_abbr = (pbp.get("homeTeam") or {}).get("abbrev")
 
-            standings_fut: Optional[Future] = None
+            standings_fut: Future | None = None
             if date and away_abbr and home_abbr:
                 standings_fut = executor.submit(
                     get_standings, date, home_abbr=home_abbr, away_abbr=away_abbr

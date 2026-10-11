@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import Optional
 
 
 @dataclass
@@ -12,7 +11,7 @@ class GameSchedule:
     season_id: int
     game_type: int
     home_team: str
-    home_team_score: Optional[int]
+    home_team_score: int | None
     away_team: str
-    away_team_score: Optional[int]
-    winning_goal_scorer_id: Optional[int]
+    away_team_score: int | None
+    winning_goal_scorer_id: int | None

@@ -1,13 +1,12 @@
 # engine/summaries.py
 import logging
-from typing import Dict, List, Optional
 
 from config import get_settings
 from gcp_ingestion import check_file_exists, download_text, upload_text
 
 
 # Lazy import inside functions to avoid any possible import loops:
-def _mark(artifact: str, *, bucket: str, date: Optional[str], game_id: int) -> None:
+def _mark(artifact: str, *, bucket: str, date: str | None, game_id: int) -> None:
     if not date:
         return
     try:
@@ -16,8 +15,8 @@ def _mark(artifact: str, *, bucket: str, date: Optional[str], game_id: int) -> N
         mark_artifact(
             bucket, date=date, game_id=game_id, artifact=artifact, exists=True
         )
-    except Exception:
-        pass  # index is convenience only
+    except Exception:  # noqa: BLE001, S110 - index is convenience only
+        pass
 
 
 logger = logging.getLogger(__name__)
@@ -34,8 +33,8 @@ _AI_BLOB = "derived/summary/ai/{game_id}.md"
 def get_or_build_stats_summary(
     *,
     game_id: int,
-    events: List[Dict],
-    date: Optional[str] = None,
+    events: list[dict],
+    date: str | None = None,
     force_refresh: bool = False,
     generator_fn=None,  # inject generate_summary to avoid circular import
 ) -> str:
@@ -61,7 +60,7 @@ def get_or_build_stats_summary(
     return summary
 
 
-def save_ai_summary(*, game_id: int, md: str, date: Optional[str] = None) -> None:
+def save_ai_summary(*, game_id: int, md: str, date: str | None = None) -> None:
     """
     Persist an AI-written markdown summary and mark the date index.
     """
@@ -72,7 +71,7 @@ def save_ai_summary(*, game_id: int, md: str, date: Optional[str] = None) -> Non
     logger.info("AI summary for game %s saved to %s/%s", game_id, bucket, blob)
 
 
-def load_ai_summary(*, game_id: int) -> Optional[str]:
+def load_ai_summary(*, game_id: int) -> str | None:
     """
     Load an AI summary if it exists; return None otherwise.
     """

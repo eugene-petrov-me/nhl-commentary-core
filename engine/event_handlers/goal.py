@@ -1,7 +1,7 @@
-from typing import Dict, Any
+from typing import Any
 
 
-def interpret_goal(event: Dict[str, Any]) -> Dict[str, Any]:
+def interpret_goal(event: dict[str, Any]) -> dict[str, Any]:
     """
     Interpret a goal event and return structured LLM-ready data.
 

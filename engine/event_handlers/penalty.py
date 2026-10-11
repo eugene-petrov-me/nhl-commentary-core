@@ -1,7 +1,7 @@
-from typing import Dict, Any
+from typing import Any
 
 
-def interpret_penalty(event: Dict[str, Any]) -> Dict[str, Any]:
+def interpret_penalty(event: dict[str, Any]) -> dict[str, Any]:
     """
     Interpret a penalty event and return structured LLM-ready data.
 

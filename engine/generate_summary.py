@@ -1,8 +1,7 @@
-from typing import List, Dict
 from collections import defaultdict
 
 
-def generate_summary(events: List[Dict]) -> str:
+def generate_summary(events: list[dict]) -> str:
     """
     Compact game summary:
     - Header with metadata (game type, venue, matchup, final score with (OT)/(SO) when applicable)

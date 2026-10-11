@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from nhlpy import NHLClient
 
@@ -8,7 +8,7 @@ from gcp_ingestion import check_file_exists, download_json, upload_json
 
 try:  # engine module may not be available in all runtimes
     from engine.date_index import mark_artifact
-except Exception:  # pragma: no cover - optional dependency
+except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -25,12 +25,12 @@ class GameStoryFetchError(Exception):
     """Raised when fetching a game's story fails."""
 
 
-def _looks_like_gs(payload: Dict[str, Any]) -> bool:
+def _looks_like_gs(payload: dict[str, Any]) -> bool:
     """Loose shape check for MVP."""
     return isinstance(payload, dict) and "summary" in payload
 
 
-def _infer_date(story: Dict[str, Any]) -> Optional[str]:
+def _infer_date(story: dict[str, Any]) -> str | None:
     """
     Try to find YYYY-MM-DD in typical fields found in game story payloads.
     """
@@ -57,7 +57,7 @@ def _infer_date(story: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _infer_abbrs(story: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+def _infer_abbrs(story: dict[str, Any]) -> tuple[str | None, str | None]:
     """Return (away_abbr, home_abbr) if present."""
     away = (story.get("awayTeam") or {}).get("abbrev")
     home = (story.get("homeTeam") or {}).get("abbrev")
@@ -65,12 +65,12 @@ def _infer_abbrs(story: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
 
 
 def _maybe_mark_index(
-    story: Dict[str, Any],
+    story: dict[str, Any],
     *,
     game_id: int,
-    date: Optional[str],
-    away_abbr: Optional[str],
-    home_abbr: Optional[str],
+    date: str | None,
+    away_abbr: str | None,
+    home_abbr: str | None,
     mark: bool,
 ) -> None:
     """Best-effort update of the date index for raw_story."""
@@ -104,11 +104,11 @@ def get_game_story(
     game_id: int,
     *,
     force_refresh: bool = False,
-    date: Optional[str] = None,  # "YYYY-MM-DD" for index (optional)
-    away_abbr: Optional[str] = None,  # optional for index
-    home_abbr: Optional[str] = None,
+    date: str | None = None,  # "YYYY-MM-DD" for index (optional)
+    away_abbr: str | None = None,  # optional for index
+    home_abbr: str | None = None,
     mark_index: bool = True,  # toggle index marking
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fetch the game story data for a specific NHL game, using GCS as a cache.
     Optionally updates a per-date index with a 'raw_story' flag.
@@ -142,8 +142,7 @@ def get_game_story(
                     mark=mark_index,
                 )
                 return cached
-        except Exception:
-            # Ignore cache errors; fall back to API
+        except Exception:  # noqa: BLE001, S110 - ignore cache errors; fall back to API
             pass
 
     # 2) API

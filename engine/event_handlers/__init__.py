@@ -1,13 +1,13 @@
+from .blocked_shot import interpret_blocked_shot
+from .delayed_penalty import interpret_delayed_penalty
+from .faceoff import interpret_faceoff
+from .giveaway import interpret_giveaway
 from .goal import interpret_goal
+from .hit import interpret_hit
+from .missed_shot import interpret_missed_shot
 from .penalty import interpret_penalty
 from .shot_on_goal import interpret_shot_on_goal
-from .hit import interpret_hit
-from .faceoff import interpret_faceoff
-from .blocked_shot import interpret_blocked_shot
-from .missed_shot import interpret_missed_shot
-from .giveaway import interpret_giveaway
 from .takeaway import interpret_takeaway
-from .delayed_penalty import interpret_delayed_penalty
 
 EVENT_HANDLERS = {
     "goal": interpret_goal,

@@ -1,7 +1,7 @@
 """Tests for api.app routes."""
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import config
@@ -48,13 +48,14 @@ sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 sys.modules.setdefault("google.genai", fake_genai)
 sys.modules.setdefault("google.genai.types", fake_genai_types)
 
-import api.app as app_mod  # noqa: E402
-from api.app import app  # noqa: E402
-from data_fetch.game_story import GameStoryFetchError  # noqa: E402
-from data_fetch.play_by_play import PlayByPlayFetchError  # noqa: E402
-from data_fetch.schedule import ScheduleFetchError  # noqa: E402
-from fastapi.testclient import TestClient  # noqa: E402
-from models.game_summary import GameSummary  # noqa: E402
+from fastapi.testclient import TestClient
+
+import api.app as app_mod
+from api.app import app
+from data_fetch.game_story import GameStoryFetchError
+from data_fetch.play_by_play import PlayByPlayFetchError
+from data_fetch.schedule import ScheduleFetchError
+from models.game_summary import GameSummary
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
@@ -63,7 +64,7 @@ TEST_SETTINGS = config.Settings(
     vertex_model="gemini-3.8-flash",
 )
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 client = TestClient(app)
 
 

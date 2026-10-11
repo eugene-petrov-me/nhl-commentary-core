@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 from datetime import date as Date
-from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
 
@@ -21,7 +20,7 @@ app = FastAPI(title="NHL Commentary API", version="1.0.0")
 @app.get("/v1/games/{game_id}/summary", response_model=GameSummary)
 def get_game_summary(
     game_id: int,
-    date: Optional[str] = Query(default=None),
+    date: str | None = Query(default=None),
     use_ai: bool = Query(default=True),
 ) -> GameSummary:
     try:
@@ -34,11 +33,11 @@ def get_game_summary(
         raise HTTPException(status_code=503, detail=str(exc))
 
 
-@app.get("/v1/games/date/{date}/summaries", response_model=List[GameSummary])
+@app.get("/v1/games/date/{date}/summaries", response_model=list[GameSummary])
 def get_date_summaries(
     date: Date,
     use_ai: bool = Query(default=True),
-) -> List[GameSummary]:
+) -> list[GameSummary]:
     date_str = date.isoformat()
     try:
         return summarize_date(date_str, use_ai=use_ai)

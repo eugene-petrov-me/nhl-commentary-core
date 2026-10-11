@@ -19,8 +19,8 @@ sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 
-import data_fetch.standings as standings_mod  # noqa: E402
-from data_fetch.standings import StandingsFetchError, get_standings  # noqa: E402
+import data_fetch.standings as standings_mod
+from data_fetch.standings import StandingsFetchError, get_standings
 
 
 def _make_entry(abbrev: str, div_rank: int = 1, div: str = "Atlantic") -> dict:
