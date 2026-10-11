@@ -21,26 +21,44 @@ class _FakeStorageClient:
         )
 
 
+# Build google.genai stub before the google namespace so it can be included as an attr
+fake_genai_types = SimpleNamespace(GenerateContentConfig=SimpleNamespace)
+fake_genai = SimpleNamespace(Client=SimpleNamespace, types=fake_genai_types)
+
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
-fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_exceptions = SimpleNamespace(NotFound=Exception, GoogleAPIError=Exception)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
 sys.modules.setdefault(
-    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+    "google",
+    SimpleNamespace(
+        cloud=fake_google_cloud, api_core=fake_google_api_core, genai=fake_genai
+    ),
 )
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+sys.modules.setdefault("google.genai", fake_genai)
+sys.modules.setdefault("google.genai.types", fake_genai_types)
 
 import engine.ai_summary  # noqa: E402 — must come after sys.modules stubs
 
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
-    openai_api_key="test-key",
-    openai_model="gpt-4o-mini",
+    vertex_project="test-project",
+    vertex_location="us-central1",
+    vertex_model="gemini-3.8-flash",
 )
+
+
+def _fake_client(expected: str = "ok"):
+    return SimpleNamespace(
+        models=SimpleNamespace(
+            generate_content=lambda **kw: SimpleNamespace(text=expected)
+        )
+    )
 
 
 def test_generate_ai_summary_includes_payloads(monkeypatch):
@@ -48,13 +66,17 @@ def test_generate_ai_summary_includes_payloads(monkeypatch):
     game_story = {"stars": ["Player One"]}
     expected = "Summary text"
 
-    def fake_create(*args, **kwargs):
-        input_payload = kwargs["input"]
-        assert "goal" in input_payload
-        assert "Player One" in input_payload
-        return SimpleNamespace(output_text=expected)
+    captured = {}
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        assert "goal" in captured["prompt"]
+        assert "Player One" in captured["prompt"]
+        return SimpleNamespace(text=expected)
+
+    fake_client = SimpleNamespace(
+        models=SimpleNamespace(generate_content=fake_generate)
+    )
     monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
 
     with config.override_settings(TEST_SETTINGS):
@@ -72,56 +94,67 @@ def test_generate_ai_summary_includes_editorial(monkeypatch):
     }
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, editorial=editorial)
 
-    assert "Historic rivalry clash" in captured["input"]
-    assert "500th time" in captured["input"]
+    assert "Historic rivalry clash" in captured["prompt"]
+    assert "500th time" in captured["prompt"]
 
 
 def test_generate_ai_summary_no_editorial_uses_fallback(monkeypatch):
     """When editorial is None, the prompt includes the fallback text."""
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, editorial=None)
 
-    assert "No editorial recap available." in captured["input"]
+    assert "No editorial recap available." in captured["prompt"]
 
 
 def test_generate_ai_summary_uses_model_from_settings(monkeypatch):
+    """generate_content is called with the model name from settings."""
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["model"] = kwargs.get("model")
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["model"] = kw.get("model")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     custom_settings = config.Settings(
         gcs_bucket_name="test-bucket",
-        openai_api_key="test-key",
-        openai_model="gpt-4o",
+        vertex_project="test-project",
+        vertex_location="us-central1",
+        vertex_model="gemini-3.8-flash",
     )
     with config.override_settings(custom_settings):
         engine.ai_summary.generate_ai_summary({}, {})
 
-    assert captured["model"] == "gpt-4o"
+    assert captured["model"] == "gemini-3.8-flash"
 
 
 def test_generate_ai_summary_includes_standings(monkeypatch):
@@ -141,35 +174,41 @@ def test_generate_ai_summary_includes_standings(monkeypatch):
     ]
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, standings=standings)
 
-    assert "MTL" in captured["input"]
-    assert "Atlantic" in captured["input"]
-    assert "77pts" in captured["input"]
+    assert "MTL" in captured["prompt"]
+    assert "Atlantic" in captured["prompt"]
+    assert "77pts" in captured["prompt"]
 
 
 def test_generate_ai_summary_no_standings_uses_fallback(monkeypatch):
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, standings=None)
 
-    assert "Standings unavailable." in captured["input"]
+    assert "Standings unavailable." in captured["prompt"]
 
 
 def test_generate_ai_summary_includes_season_series(monkeypatch):
@@ -186,68 +225,71 @@ def test_generate_ai_summary_includes_season_series(monkeypatch):
     }
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, season_series=season_series)
 
-    assert "2-1" in captured["input"]
-    assert "NJD" in captured["input"]
-    assert "2024-10-04" in captured["input"]
+    assert "2-1" in captured["prompt"]
+    assert "NJD" in captured["prompt"]
+    assert "2024-10-04" in captured["prompt"]
 
 
 def test_generate_ai_summary_no_series_uses_fallback(monkeypatch):
     captured = {}
 
-    def fake_create(*args, **kwargs):
-        captured["input"] = kwargs["input"]
-        return SimpleNamespace(output_text="ok")
+    def fake_generate(**kw):
+        captured["prompt"] = kw.get("contents", "")
+        return SimpleNamespace(text="ok")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         engine.ai_summary.generate_ai_summary({}, {}, season_series=None)
 
-    assert "Season series data unavailable." in captured["input"]
+    assert "Season series data unavailable." in captured["prompt"]
 
 
 def test_generate_ai_summary_handles_error(monkeypatch):
-    def fake_create(*args, **kwargs):
+    def fake_generate(**kw):
         raise Exception("boom")
 
-    fake_client = SimpleNamespace(responses=SimpleNamespace(create=fake_create))
-    monkeypatch.setattr(engine.ai_summary, "_get_client", lambda: fake_client)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(models=SimpleNamespace(generate_content=fake_generate)),
+    )
 
     with config.override_settings(TEST_SETTINGS):
         with pytest.raises(RuntimeError, match="boom"):
             engine.ai_summary.generate_ai_summary({}, {})
 
 
-def test_missing_api_key_raises_at_settings_load(monkeypatch):
-    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
-    monkeypatch.delenv("GCS_BUCKET_NAME", raising=False)
-    config.clear_overrides()
-    config.reload_settings.__globals__["_default_settings"] = None  # type: ignore[index]
+@pytest.mark.parametrize("text", [None, "", "   \n\t "])
+def test_generate_ai_summary_empty_response_raises(monkeypatch, text):
+    # Gemini returns text=None when a response is blocked (e.g. safety filters)
+    monkeypatch.setattr(
+        engine.ai_summary,
+        "_get_client",
+        lambda: SimpleNamespace(
+            models=SimpleNamespace(
+                generate_content=lambda **kw: SimpleNamespace(text=text)
+            )
+        ),
+    )
 
-    # Patch _build_settings directly to simulate missing key
-    original_build = config._build_settings
-
-    def build_without_key():
-        import os
-
-        key = os.getenv("OPENAI_API_KEY", "")
-        if not key:
-            raise RuntimeError("Missing OPENAI_API_KEY environment variable")
-        return original_build()
-
-    monkeypatch.setattr(config, "_build_settings", build_without_key)
-    monkeypatch.setattr(config, "_default_settings", None)
-
-    with pytest.raises(RuntimeError, match="OPENAI_API_KEY"):
-        config.get_settings()
+    with config.override_settings(TEST_SETTINGS):
+        with pytest.raises(RuntimeError, match="empty response"):
+            engine.ai_summary.generate_ai_summary({}, {})

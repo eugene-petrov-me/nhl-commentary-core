@@ -30,7 +30,7 @@ def get_game_summary(
         logger.warning("NHL API fetch failed for game %s: %s", game_id, exc)
         raise HTTPException(status_code=502, detail=str(exc))
     except RuntimeError as exc:
-        logger.error("OpenAI failure for game %s: %s", game_id, exc)
+        logger.error("Gemini failure for game %s: %s", game_id, exc)
         raise HTTPException(status_code=503, detail=str(exc))
 
 

@@ -1,6 +1,6 @@
 # nhl-commentary-core
 
-AI-powered NHL game summary backend. Fetches play-by-play, game story, editorial, standings, and season series data from the NHL API, then generates structured game summaries via OpenAI. Exposes results over a FastAPI HTTP service.
+AI-powered NHL game summary backend. Fetches play-by-play, game story, editorial, standings, and season series data from the NHL API, then generates structured game summaries via Gemini (Vertex AI or the Gemini API). Exposes results over a FastAPI HTTP service.
 
 ## Features
 
@@ -14,7 +14,7 @@ AI-powered NHL game summary backend. Fetches play-by-play, game story, editorial
 ## Requirements
 
 - Python 3.11+
-- OpenAI API key
+- Google Cloud project with Vertex AI enabled (or a Gemini API key)
 - Google Cloud Storage bucket
 
 ## Setup
@@ -30,9 +30,12 @@ cp .env.example .env                  # fill in your keys
 
 | Variable | Description |
 |---|---|
-| `OPENAI_API_KEY` | OpenAI API key |
+| `VERTEX_PROJECT` | GCP project for Vertex AI (default: `nhl-commentary`) |
+| `VERTEX_LOCATION` | Vertex AI region (default: `us-central1`) |
+| `VERTEX_MODEL` | Gemini model to use (default: `gemini-3.8-flash`) |
+| `GEMINI_API_KEY` | Optional. If set, uses the Gemini API directly instead of Vertex AI |
+| `GOOGLE_APPLICATION_CREDENTIALS` | Path to a service-account key (Vertex AI + GCS auth) |
 | `GCS_BUCKET_NAME` | GCS bucket for caching (default: `nhl-commentary-bucket`) |
-| `OPENAI_MODEL` | Model to use (default: `gpt-4o-mini`) |
 
 ## Usage
 
@@ -71,7 +74,7 @@ api/              # FastAPI service layer
 data_fetch/       # NHL API clients (schedule, play-by-play, game story,
                   #   editorial, standings, season series)
 engine/           # Summary generation pipeline
-  ai_summary.py      # OpenAI prompt + response
+  ai_summary.py      # Gemini prompt + response
   summarize_game.py  # Orchestrator (AI vs rule-based)
   batch.py           # summarize_date() for daily runs
   process_game.py    # Event processing
