@@ -133,13 +133,13 @@ def test_get_game_summary_story_error_returns_502(monkeypatch):
 
 def test_get_game_summary_vertex_error_returns_503(monkeypatch):
     def fake_summarize(*a, **kw):
-        raise RuntimeError("Vertex AI request failed")
+        raise RuntimeError("Gemini request failed")
 
     monkeypatch.setattr(app_mod, "summarize_game", fake_summarize)
     with config.override_settings(TEST_SETTINGS):
         response = client.get("/v1/games/1/summary")
     assert response.status_code == 503
-    assert "Vertex AI request failed" in response.json()["detail"]
+    assert "Gemini request failed" in response.json()["detail"]
 
 
 def test_get_game_summary_unexpected_error_returns_500(monkeypatch):

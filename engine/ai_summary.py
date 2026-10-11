@@ -141,11 +141,12 @@ def generate_ai_summary(
             ),
         )
     except Exception as exc:  # pragma: no cover - upstream exceptions vary
-        raise RuntimeError(f"Vertex AI request failed: {exc}") from exc
+        raise RuntimeError(f"Gemini request failed: {exc}") from exc
 
-    if not response.text:
-        raise RuntimeError("Vertex AI returned an empty response")
-    return response.text.strip()
+    text = (response.text or "").strip()
+    if not text:
+        raise RuntimeError("Gemini returned an empty response")
+    return text
 
 
 __all__ = ["generate_ai_summary"]

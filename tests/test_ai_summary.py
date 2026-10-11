@@ -277,7 +277,7 @@ def test_generate_ai_summary_handles_error(monkeypatch):
             engine.ai_summary.generate_ai_summary({}, {})
 
 
-@pytest.mark.parametrize("text", [None, ""])
+@pytest.mark.parametrize("text", [None, "", "   \n\t "])
 def test_generate_ai_summary_empty_response_raises(monkeypatch, text):
     # Gemini returns text=None when a response is blocked (e.g. safety filters)
     monkeypatch.setattr(
