@@ -4,17 +4,17 @@ from __future__ import annotations
 
 import argparse
 import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
-from typing import Iterable, Optional
 
 try:  # pragma: no cover - optional dependency during testing
     from data_fetch.schedule import get_schedule as _get_schedule
-except Exception:  # pragma: no cover - fallback when optional deps missing
+except Exception:  # noqa: BLE001  # pragma: no cover - fallback when optional deps missing
     _get_schedule = None  # type: ignore[assignment]
 
 try:  # pragma: no cover - optional dependency during testing
     from engine.summarize_game import summarize_game as _summarize_game
-except Exception:  # pragma: no cover - fallback when optional deps missing
+except Exception:  # noqa: BLE001  # pragma: no cover - fallback when optional deps missing
     _summarize_game = None  # type: ignore[assignment]
 from models.game_schedule import GameSchedule
 from models.game_summary import GameSummary
@@ -57,7 +57,7 @@ def summarize_game(*args, **kwargs):
 
 
 def _select_game(
-    schedule: Iterable[GameSchedule], *, game_id: Optional[int]
+    schedule: Iterable[GameSchedule], *, game_id: int | None
 ) -> GameSchedule:
     games = list(schedule)
     if not games:
@@ -77,7 +77,7 @@ def _select_game(
 def generate_summary_for_date(
     date: str,
     *,
-    game_id: Optional[int] = None,
+    game_id: int | None = None,
     use_ai: bool = True,
 ) -> SummaryResult:
     """Programmatic entry point for summarizing a game on a given date."""
@@ -154,7 +154,7 @@ def _interactive_flow(args: argparse.Namespace) -> None:
         print(f"⚠️ No events for game {game.game_id}")
 
 
-def main(argv: Optional[list[str]] = None) -> None:
+def main(argv: list[str] | None = None) -> None:
     parser = _build_parser()
     args = parser.parse_args(argv)
 
@@ -196,8 +196,8 @@ __all__ = [
     "DEFAULT_DATE",
     "GameSelectionError",
     "SummaryResult",
-    "get_schedule",
     "generate_summary_for_date",
-    "summarize_game",
+    "get_schedule",
     "main",
+    "summarize_game",
 ]

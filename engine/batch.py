@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import logging
-from typing import List
 
 from data_fetch.schedule import get_schedule
 from models.game_summary import GameSummary
+
 from .summarize_game import summarize_game
 
 logger = logging.getLogger(__name__)
@@ -16,7 +16,7 @@ def summarize_date(
     date: str,
     *,
     use_ai: bool = True,
-) -> List[GameSummary]:
+) -> list[GameSummary]:
     """Summarize all games scheduled on a given date.
 
     Games that fail are logged and skipped; the returned list contains only
@@ -30,7 +30,7 @@ def summarize_date(
         List of GameSummary objects, one per successfully processed game.
     """
     schedule = get_schedule(date)
-    results: List[GameSummary] = []
+    results: list[GameSummary] = []
 
     for game in schedule:
         try:

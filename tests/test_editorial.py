@@ -38,7 +38,7 @@ sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 
-import data_fetch.editorial as editorial_mod  # noqa: E402
+import data_fetch.editorial as editorial_mod
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
@@ -315,9 +315,11 @@ def test_http_error_on_index_raises_editorial_fetch_error(monkeypatch):
     monkeypatch.setattr(editorial_mod, "mark_artifact", lambda *a, **kw: None)
     monkeypatch.setitem(sys.modules, "httpx", fake_httpx)
 
-    with config.override_settings(TEST_SETTINGS):
-        with pytest.raises(editorial_mod.EditorialFetchError, match="404"):
-            editorial_mod.get_editorial(12345)
+    with (
+        config.override_settings(TEST_SETTINGS),
+        pytest.raises(editorial_mod.EditorialFetchError, match="404"),
+    ):
+        editorial_mod.get_editorial(12345)
 
 
 def test_cache_read_error_falls_through_to_live_fetch(monkeypatch):

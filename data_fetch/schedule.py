@@ -1,5 +1,4 @@
 import logging
-from typing import List, Optional
 
 from nhlpy import NHLClient
 
@@ -9,7 +8,7 @@ from models.game_schedule import GameSchedule
 # Optional: only if you want to prefill the date index
 try:
     from engine.date_index import mark_artifact  # your simple index helper
-except Exception:  # pragma: no cover - optional dependency
+except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -22,9 +21,9 @@ class ScheduleFetchError(Exception):
 def get_schedule(
     date: str,
     *,
-    bucket_name: Optional[str] = None,
+    bucket_name: str | None = None,
     mark_index: bool = True,
-) -> List[GameSchedule]:
+) -> list[GameSchedule]:
     """
     Fetch the NHL game schedule for a specific date.
 
@@ -52,7 +51,7 @@ def get_schedule(
 
     games = sched.get("games", []) or []
 
-    schedules: List[GameSchedule] = [
+    schedules: list[GameSchedule] = [
         GameSchedule(
             game_id=g.get("id"),
             season_id=g.get("season"),

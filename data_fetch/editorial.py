@@ -3,14 +3,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Any, Dict, Optional
+from typing import Any
 
 from config import get_settings
 from gcp_ingestion import check_file_exists, download_json, upload_json
 
 try:  # engine module may not be available in all runtimes
     from engine.date_index import mark_artifact
-except Exception:  # pragma: no cover - optional dependency
+except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ def _bucket_name() -> str:
     return get_settings().gcs_bucket_name
 
 
-def _extract_body(story: Dict[str, Any]) -> str:
+def _extract_body(story: dict[str, Any]) -> str:
     """Concatenate all markdown parts from a Forge DAPI story into plain text."""
     parts = story.get("parts", [])
     chunks: list[str] = []
@@ -46,7 +46,7 @@ def _extract_body(story: Dict[str, Any]) -> str:
     return "\n\n".join(chunks)
 
 
-def _fetch_from_forge(game_id: int) -> Optional[Dict[str, Any]]:
+def _fetch_from_forge(game_id: int) -> dict[str, Any] | None:
     """Fetch editorial data from Forge DAPI. Returns None if no recap exists."""
     try:
         import httpx
@@ -76,7 +76,7 @@ def _fetch_from_forge(game_id: int) -> Optional[Dict[str, Any]]:
         return None
 
     item = items[0]
-    self_url: Optional[str] = item.get("selfUrl") or item.get("url")
+    self_url: str | None = item.get("selfUrl") or item.get("url")
     if not self_url:
         logger.debug("Editorial index item missing selfUrl for game %s", game_id)
         return None
@@ -125,9 +125,9 @@ def _fetch_from_forge(game_id: int) -> Optional[Dict[str, Any]]:
 def _maybe_mark_index(
     *,
     game_id: int,
-    date: Optional[str],
-    away_abbr: Optional[str],
-    home_abbr: Optional[str],
+    date: str | None,
+    away_abbr: str | None,
+    home_abbr: str | None,
     mark: bool,
 ) -> None:
     """Best-effort update of the date index for raw_editorial."""
@@ -156,11 +156,11 @@ def get_editorial(
     game_id: int,
     *,
     force_refresh: bool = False,
-    date: Optional[str] = None,
-    away_abbr: Optional[str] = None,
-    home_abbr: Optional[str] = None,
+    date: str | None = None,
+    away_abbr: str | None = None,
+    home_abbr: str | None = None,
     mark_index: bool = True,
-) -> Optional[Dict[str, Any]]:
+) -> dict[str, Any] | None:
     """Fetch the editorial game recap for an NHL game, using GCS as a cache.
 
     Returns None if no editorial recap has been published yet for the game.
@@ -197,8 +197,8 @@ def get_editorial(
                     mark=mark_index,
                 )
                 return cached
-        except Exception:
-            pass  # Fall through to live fetch on cache read error
+        except Exception:  # noqa: BLE001, S110 - fall through to live fetch on cache read error
+            pass
 
     # 2) Fetch from Forge DAPI
     editorial = _fetch_from_forge(game_id)
@@ -226,4 +226,4 @@ def get_editorial(
     return editorial
 
 
-__all__ = ["get_editorial", "EditorialFetchError"]
+__all__ = ["EditorialFetchError", "get_editorial"]

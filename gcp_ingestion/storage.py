@@ -1,9 +1,10 @@
 import json
 import logging
 import os
+from collections.abc import Iterator
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import Any, Dict, Iterator, Optional
+from typing import Any
 
 from google.api_core.exceptions import NotFound
 from google.cloud import storage
@@ -53,13 +54,13 @@ def override_storage_client(client: storage.Client) -> Iterator[storage.Client]:
 
 
 def _get_bucket(
-    bucket_name: str, *, client: Optional[storage.Client] = None
+    bucket_name: str, *, client: storage.Client | None = None
 ) -> storage.Bucket:
     return (client or get_storage_client()).bucket(bucket_name)
 
 
 def check_file_exists(
-    bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
+    bucket_name: str, blob_name: str, *, client: storage.Client | None = None
 ) -> bool:
     bucket = _get_bucket(bucket_name, client=client)
     blob = bucket.blob(blob_name)
@@ -70,8 +71,8 @@ def check_file_exists(
 
 
 def download_json(
-    bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
-) -> Dict[str, Any]:
+    bucket_name: str, blob_name: str, *, client: storage.Client | None = None
+) -> dict[str, Any]:
     bucket = _get_bucket(bucket_name, client=client)
     blob = bucket.blob(blob_name)
     text = blob.download_as_text()  # raises if missing; let caller handle
@@ -83,7 +84,7 @@ def upload_json(
     blob_name: str,
     payload: Any,
     *,
-    client: Optional[storage.Client] = None,
+    client: storage.Client | None = None,
 ) -> None:
     bucket = _get_bucket(bucket_name, client=client)
     # Best practice: don't auto-create buckets here. Assume infra created outside.
@@ -96,7 +97,7 @@ def upload_json(
 
 
 def download_text(
-    bucket_name: str, blob_name: str, *, client: Optional[storage.Client] = None
+    bucket_name: str, blob_name: str, *, client: storage.Client | None = None
 ) -> str:
     bucket = _get_bucket(bucket_name, client=client)
     blob = bucket.blob(blob_name)
@@ -109,7 +110,7 @@ def upload_text(
     text: str,
     content_type: str = "text/plain",
     *,
-    client: Optional[storage.Client] = None,
+    client: storage.Client | None = None,
 ) -> None:
     bucket = _get_bucket(bucket_name, client=client)
     blob = bucket.blob(blob_name)

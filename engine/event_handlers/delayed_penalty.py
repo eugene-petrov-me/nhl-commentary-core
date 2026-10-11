@@ -1,7 +1,7 @@
-from typing import Dict, Any
+from typing import Any
 
 
-def interpret_delayed_penalty(event: Dict[str, Any]) -> Dict[str, Any]:
+def interpret_delayed_penalty(event: dict[str, Any]) -> dict[str, Any]:
     """Interpret a delayed-penalty event and return structured LLM-ready data."""
     details = event.get("details", {})
     period = event.get("periodDescriptor", {}).get("number")

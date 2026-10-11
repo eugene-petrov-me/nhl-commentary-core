@@ -4,16 +4,15 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Dict, List, Optional
 
-import google.genai as genai
+from google import genai
 from google.genai import types
 
 from config import get_settings
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
-_client: Optional[genai.Client] = None
+_client: genai.Client | None = None
 
 
 def _get_client() -> genai.Client:
@@ -48,7 +47,7 @@ def _ordinal(n: object) -> str:
     return {1: "st", 2: "nd", 3: "rd"}.get(i % 10, "th")
 
 
-def _format_standings(standings: List[dict]) -> str:
+def _format_standings(standings: list[dict]) -> str:
     """Format filtered standings list into a compact prompt-ready string."""
     lines = []
     for s in standings:
@@ -89,11 +88,11 @@ def _format_season_series(season_series: dict) -> str:
 
 
 def generate_ai_summary(
-    play_by_play: Dict,
-    game_story: Dict,
-    editorial: Optional[Dict] = None,
-    standings: Optional[List[dict]] = None,
-    season_series: Optional[dict] = None,
+    play_by_play: dict,
+    game_story: dict,
+    editorial: dict | None = None,
+    standings: list[dict] | None = None,
+    season_series: dict | None = None,
 ) -> str:
     """Generate a natural language summary for a game.
 

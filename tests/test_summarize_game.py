@@ -1,6 +1,6 @@
 import sys
 import types
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 fake_nhlpy = types.SimpleNamespace(NHLClient=lambda: types.SimpleNamespace())
 sys.modules["nhlpy"] = fake_nhlpy
@@ -53,7 +53,7 @@ def _make_summary(
         game_id=1,
         summary_markdown=markdown,
         summary_type=summary_type,
-        generated_at=datetime.now(timezone.utc),
+        generated_at=datetime.now(UTC),
         cached=False,
     )
 

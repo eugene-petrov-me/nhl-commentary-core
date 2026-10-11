@@ -1,5 +1,5 @@
 import logging
-from typing import Any, Dict, Optional, Tuple
+from typing import Any
 
 from nhlpy import NHLClient
 
@@ -8,7 +8,7 @@ from gcp_ingestion import check_file_exists, download_json, upload_json
 
 try:  # engine is optional in some environments (e.g. tests)
     from engine.date_index import mark_artifact
-except Exception:  # pragma: no cover - optional dependency
+except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -25,12 +25,12 @@ class PlayByPlayFetchError(Exception):
     """Raised when fetching play-by-play data fails."""
 
 
-def _looks_like_pbp(payload: Dict[str, Any]) -> bool:
+def _looks_like_pbp(payload: dict[str, Any]) -> bool:
     """Loose shape check for MVP."""
     return isinstance(payload, dict) and "plays" in payload
 
 
-def _infer_date(pbp: Dict[str, Any]) -> Optional[str]:
+def _infer_date(pbp: dict[str, Any]) -> str | None:
     """Try to pull YYYY-MM-DD from typical fields in the PBP."""
     for key in ("gameDate", "startTimeUTC", "gameDateUTC"):
         v = pbp.get(key)
@@ -42,7 +42,7 @@ def _infer_date(pbp: Dict[str, Any]) -> Optional[str]:
     return None
 
 
-def _infer_abbrs(pbp: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
+def _infer_abbrs(pbp: dict[str, Any]) -> tuple[str | None, str | None]:
     """Return (away_abbr, home_abbr) if present."""
     away = (pbp.get("awayTeam") or {}).get("abbrev")
     home = (pbp.get("homeTeam") or {}).get("abbrev")
@@ -50,12 +50,12 @@ def _infer_abbrs(pbp: Dict[str, Any]) -> Tuple[Optional[str], Optional[str]]:
 
 
 def _maybe_mark_index(
-    pbp: Dict[str, Any],
+    pbp: dict[str, Any],
     *,
     game_id: int,
-    date: Optional[str],
-    away_abbr: Optional[str],
-    home_abbr: Optional[str],
+    date: str | None,
+    away_abbr: str | None,
+    home_abbr: str | None,
     mark: bool,
 ) -> None:
     """Best-effort update of the date index for raw_pbp."""
@@ -89,11 +89,11 @@ def get_play_by_play(
     game_id: int,
     *,
     force_refresh: bool = False,
-    date: Optional[str] = None,  # "YYYY-MM-DD" (optional, used for index)
-    away_abbr: Optional[str] = None,  # optional abbrevs for index
-    home_abbr: Optional[str] = None,
+    date: str | None = None,  # "YYYY-MM-DD" (optional, used for index)
+    away_abbr: str | None = None,  # optional abbrevs for index
+    home_abbr: str | None = None,
     mark_index: bool = True,  # turn index marking on/off
-) -> Dict[str, Any]:
+) -> dict[str, Any]:
     """
     Fetch the play-by-play data for a specific NHL game, using GCS as a cache.
     Optionally updates a per-date index with a 'raw_pbp' flag.

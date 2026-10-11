@@ -1,7 +1,7 @@
 """Tests for engine.batch.summarize_date."""
 
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from types import SimpleNamespace
 
 import config
@@ -41,7 +41,7 @@ sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
 sys.modules.setdefault("google.genai", fake_genai)
 sys.modules.setdefault("google.genai.types", fake_genai_types)
 
-import engine.batch as batch_mod  # noqa: E402
+import engine.batch as batch_mod
 from models.game_schedule import GameSchedule
 from models.game_summary import GameSummary
 
@@ -52,7 +52,7 @@ TEST_SETTINGS = config.Settings(
     vertex_model="gemini-3.8-flash",
 )
 
-NOW = datetime.now(timezone.utc)
+NOW = datetime.now(UTC)
 
 
 def _make_game(game_id: int, home: str = "MTL", away: str = "COL") -> GameSchedule:

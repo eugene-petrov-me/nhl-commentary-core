@@ -1,7 +1,7 @@
-from typing import Dict, Any
+from typing import Any
 
 
-def interpret_shot_on_goal(event: Dict[str, Any]) -> Dict[str, Any]:
+def interpret_shot_on_goal(event: dict[str, Any]) -> dict[str, Any]:
     """
     Interpret a shot-on-goal event and return structured LLM-ready data.
 

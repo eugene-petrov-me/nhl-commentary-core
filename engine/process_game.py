@@ -1,16 +1,17 @@
-from data_fetch.play_by_play import get_play_by_play
+from typing import Any
+
 from data_fetch.game_story import get_game_story
+from data_fetch.play_by_play import get_play_by_play
 from engine.transform import transform_event
-from typing import List, Dict, Any
 
 
-def process_game_events(game_id: int) -> List[Dict[str, Any]]:
+def process_game_events(game_id: int) -> list[dict[str, Any]]:
     raw_data = get_play_by_play(game_id)
     events = raw_data.get("plays", [])
 
     roster_spots = raw_data.get("rosterSpots", [])
-    player_map: Dict[int, str] = {}
-    player_team_map: Dict[int, int] = {}
+    player_map: dict[int, str] = {}
+    player_team_map: dict[int, int] = {}
     for spot in roster_spots:
         pid = spot.get("playerId")
         player_map[pid] = (
@@ -18,8 +19,8 @@ def process_game_events(game_id: int) -> List[Dict[str, Any]]:
         )
         player_team_map[pid] = spot.get("teamId")
 
-    team_name_map: Dict[int, str] = {}
-    abbrev_to_id: Dict[str, int] = {}
+    team_name_map: dict[int, str] = {}
+    abbrev_to_id: dict[str, int] = {}
     for side in ["homeTeam", "awayTeam"]:
         team = raw_data.get(side, {}) or {}
         tid = team.get("id")
