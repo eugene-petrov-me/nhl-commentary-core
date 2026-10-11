@@ -1,9 +1,14 @@
 # engine/date_index.py
+import logging
 from typing import Any
+
+from google.api_core.exceptions import GoogleAPIError
 
 from gcp_ingestion import check_file_exists, download_json, upload_json
 
 DATE_INDEX_BLOB = "indexes/by_date/{date}.json"
+
+logger = logging.getLogger(__name__)
 
 
 def _load_date_index(bucket: str, date: str) -> dict[str, Any]:
@@ -11,8 +16,12 @@ def _load_date_index(bucket: str, date: str) -> dict[str, Any]:
     if check_file_exists(bucket, blob):
         try:
             return download_json(bucket, blob)
-        except Exception:  # noqa: BLE001, S110 - unreadable index; start a fresh one
-            pass
+        except (GoogleAPIError, ValueError):
+            logger.warning(
+                "Unreadable date index for %s; starting a fresh one",
+                date,
+                exc_info=True,
+            )
     return {"date": date, "games": []}
 
 

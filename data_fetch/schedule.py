@@ -8,7 +8,7 @@ from models.game_schedule import GameSchedule
 # Optional: only if you want to prefill the date index
 try:
     from engine.date_index import mark_artifact  # your simple index helper
-except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)

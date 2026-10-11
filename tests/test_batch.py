@@ -23,7 +23,9 @@ class _FakeStorageClient:
 
 
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
-fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_exceptions = SimpleNamespace(
+    NotFound=Exception, GoogleAPIError=type("GoogleAPIError", (Exception,), {})
+)
 fake_genai_types = SimpleNamespace(GenerateContentConfig=SimpleNamespace)
 fake_genai = SimpleNamespace(Client=SimpleNamespace, types=fake_genai_types)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)

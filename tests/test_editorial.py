@@ -27,7 +27,9 @@ class _FakeStorageClient:
 
 
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
-fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_exceptions = SimpleNamespace(
+    NotFound=Exception, GoogleAPIError=type("GoogleAPIError", (Exception,), {})
+)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
 sys.modules.setdefault(
@@ -331,7 +333,7 @@ def test_cache_read_error_falls_through_to_live_fetch(monkeypatch):
         return True  # Cache appears to exist
 
     def download_json(bucket, path):
-        raise RuntimeError("corrupt blob")  # Cache read fails
+        raise ValueError("corrupt blob")  # Cache read fails
 
     def upload_json(bucket, path, data):
         upload_calls.append(data)
@@ -350,3 +352,81 @@ def test_cache_read_error_falls_through_to_live_fetch(monkeypatch):
     assert result["headline"] == "Great game headline"
     # And re-cached it
     assert len(upload_calls) == 1
+
+
+# ---------------------------------------------------------------------------
+# Narrowed cache-read fallback
+# ---------------------------------------------------------------------------
+
+
+class _FakeGoogleAPIError(Exception):
+    """Stand-in for GoogleAPIError, independent of any sys.modules stubs."""
+
+
+def _patch_cache_read(monkeypatch, download_json, mark=lambda *a, **kw: None):
+    upload_calls = []
+    monkeypatch.setattr(editorial_mod, "GoogleAPIError", _FakeGoogleAPIError)
+    monkeypatch.setattr(editorial_mod, "check_file_exists", lambda *a, **kw: True)
+    monkeypatch.setattr(editorial_mod, "download_json", download_json)
+    monkeypatch.setattr(
+        editorial_mod, "upload_json", lambda b, p, data: upload_calls.append(data)
+    )
+    monkeypatch.setattr(editorial_mod, "mark_artifact", mark)
+    fake_httpx = _make_httpx_mock(FORGE_INDEX_RESPONSE, FORGE_STORY_RESPONSE)
+    monkeypatch.setitem(sys.modules, "httpx", fake_httpx)
+    return upload_calls, fake_httpx
+
+
+@pytest.mark.parametrize(
+    "exc", [_FakeGoogleAPIError("gcs down"), ValueError("bad json")]
+)
+def test_cache_read_gcs_or_json_error_logs_warning_and_fetches_live(
+    monkeypatch, caplog, exc
+):
+    def download_json(bucket, path):
+        raise exc
+
+    upload_calls, fake_httpx = _patch_cache_read(monkeypatch, download_json)
+
+    with config.override_settings(TEST_SETTINGS), caplog.at_level("WARNING"):
+        result = editorial_mod.get_editorial(12345)
+
+    assert result is not None
+    assert result["headline"] == "Great game headline"
+    assert fake_httpx.call_log  # live fetch happened
+    assert len(upload_calls) == 1
+    assert "Failed to read editorial cache for game 12345" in caplog.text
+
+
+def test_cache_read_unexpected_error_raises(monkeypatch):
+    def download_json(bucket, path):
+        raise RuntimeError("bug")
+
+    _, fake_httpx = _patch_cache_read(monkeypatch, download_json)
+
+    with (
+        config.override_settings(TEST_SETTINGS),
+        pytest.raises(RuntimeError, match="bug"),
+    ):
+        editorial_mod.get_editorial(12345)
+
+    assert not fake_httpx.call_log
+
+
+def test_cache_hit_index_failure_returns_cached_without_refetch(monkeypatch, caplog):
+    """A failing date-index update must not discard a good cache hit."""
+
+    def failing_mark(*a, **kw):
+        raise _FakeGoogleAPIError("index write failed")
+
+    upload_calls, fake_httpx = _patch_cache_read(
+        monkeypatch, lambda b, p: FAKE_EDITORIAL, mark=failing_mark
+    )
+
+    with config.override_settings(TEST_SETTINGS), caplog.at_level("WARNING"):
+        result = editorial_mod.get_editorial(12345, date="2025-04-25")
+
+    assert result == FAKE_EDITORIAL
+    assert not fake_httpx.call_log
+    assert not upload_calls
+    assert "Failed to mark raw_editorial index" in caplog.text
