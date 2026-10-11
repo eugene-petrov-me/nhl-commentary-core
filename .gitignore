@@ -10,3 +10,6 @@ CLAUDE.local.md
 
 # Local planning / roadmap (not tracked in git)
 .plan/
+
+# macOS
+.DS_Store

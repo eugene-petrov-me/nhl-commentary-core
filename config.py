@@ -15,8 +15,10 @@ class Settings:
     """Runtime configuration values."""
 
     gcs_bucket_name: str
-    openai_api_key: str
-    openai_model: str
+    vertex_project: str
+    vertex_location: str
+    vertex_model: str
+    gemini_api_key: str = ""
 
 
 _override_stack: list[Settings] = []
@@ -29,14 +31,18 @@ def _build_settings() -> Settings:
     bucket = os.getenv("GCS_BUCKET_NAME", "nhl-commentary-bucket")
     if not bucket:
         raise RuntimeError("Missing GCS_BUCKET_NAME environment variable")
-    openai_api_key = os.getenv("OPENAI_API_KEY", "")
-    if not openai_api_key:
-        raise RuntimeError("Missing OPENAI_API_KEY environment variable")
-    openai_model = os.getenv("OPENAI_MODEL", "gpt-4o-mini")
+    vertex_project = os.getenv("VERTEX_PROJECT", "nhl-commentary")
+    if not vertex_project:
+        raise RuntimeError("Missing VERTEX_PROJECT environment variable")
+    vertex_location = os.getenv("VERTEX_LOCATION", "us-central1")
+    vertex_model = os.getenv("VERTEX_MODEL", "gemini-3.8-flash")
+    gemini_api_key = os.getenv("GEMINI_API_KEY", "")
     return Settings(
         gcs_bucket_name=bucket,
-        openai_api_key=openai_api_key,
-        openai_model=openai_model,
+        vertex_project=vertex_project,
+        vertex_location=vertex_location,
+        vertex_model=vertex_model,
+        gemini_api_key=gemini_api_key,
     )
 
 

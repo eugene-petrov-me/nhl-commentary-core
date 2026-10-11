@@ -42,8 +42,9 @@ import data_fetch.editorial as editorial_mod  # noqa: E402
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
-    openai_api_key="test-key",
-    openai_model="gpt-4o-mini",
+    vertex_project="test-project",
+    vertex_location="us-central1",
+    vertex_model="gemini-3.8-flash",
 )
 
 FAKE_EDITORIAL = {

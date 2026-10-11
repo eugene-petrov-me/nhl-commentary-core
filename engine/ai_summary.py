@@ -1,4 +1,4 @@
-"""Generate an AI-powered game summary using OpenAI's ChatCompletion."""
+"""Generate an AI-powered game summary using Vertex AI (Gemini)."""
 
 from __future__ import annotations
 
@@ -6,19 +6,28 @@ import json
 from pathlib import Path
 from typing import Dict, List, Optional
 
-from openai import OpenAI
+import google.genai as genai
+from google.genai import types
 
 from config import get_settings
 
 TEMPLATE_DIR = Path(__file__).resolve().parent.parent / "prompts"
 
-_client: OpenAI | None = None
+_client: Optional[genai.Client] = None
 
 
-def _get_client() -> OpenAI:
+def _get_client() -> genai.Client:
     global _client
     if _client is None:
-        _client = OpenAI(api_key=get_settings().openai_api_key)
+        s = get_settings()
+        if s.gemini_api_key:
+            _client = genai.Client(api_key=s.gemini_api_key)
+        else:
+            _client = genai.Client(
+                vertexai=True,
+                project=s.vertex_project,
+                location=s.vertex_location,
+            )
     return _client
 
 
@@ -124,15 +133,19 @@ def generate_ai_summary(
     )
 
     try:
-        response = _get_client().responses.create(
-            model=get_settings().openai_model,
-            instructions="Talk like The Hockey Guy.",
-            input=populated,
+        response = _get_client().models.generate_content(
+            model=get_settings().vertex_model,
+            contents=populated,
+            config=types.GenerateContentConfig(
+                system_instruction="Talk like The Hockey Guy.",
+            ),
         )
     except Exception as exc:  # pragma: no cover - upstream exceptions vary
-        raise RuntimeError(f"OpenAI request failed: {exc}") from exc
+        raise RuntimeError(f"Vertex AI request failed: {exc}") from exc
 
-    return response.output_text.strip()
+    if not response.text:
+        raise RuntimeError("Vertex AI returned an empty response")
+    return response.text.strip()
 
 
 __all__ = ["generate_ai_summary"]

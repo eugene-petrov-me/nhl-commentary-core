@@ -39,7 +39,10 @@ def test_get_schedule_seeds_index(monkeypatch):
 
     with config.override_settings(
         config.Settings(
-            gcs_bucket_name="bucket", openai_api_key="k", openai_model="gpt-4o-mini"
+            gcs_bucket_name="bucket",
+            vertex_project="test-project",
+            vertex_location="us-central1",
+            vertex_model="gemini-3.8-flash",
         )
     ):
         games = schedule.get_schedule("2025-04-25", mark_index=True)

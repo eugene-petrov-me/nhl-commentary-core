@@ -25,8 +25,9 @@ def test_get_play_by_play_uses_cache(monkeypatch):
     with config.override_settings(
         config.Settings(
             gcs_bucket_name="test-bucket",
-            openai_api_key="k",
-            openai_model="gpt-4o-mini",
+            vertex_project="test-project",
+            vertex_location="us-central1",
+            vertex_model="gemini-3.8-flash",
         )
     ):
         payload = play_by_play.get_play_by_play(123, mark_index=False)
@@ -63,7 +64,10 @@ def test_get_play_by_play_marks_index(monkeypatch):
 
     with config.override_settings(
         config.Settings(
-            gcs_bucket_name="bucket", openai_api_key="k", openai_model="gpt-4o-mini"
+            gcs_bucket_name="bucket",
+            vertex_project="test-project",
+            vertex_location="us-central1",
+            vertex_model="gemini-3.8-flash",
         )
     ):
         play_by_play.get_play_by_play(456, mark_index=True)

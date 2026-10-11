@@ -24,15 +24,22 @@ class _FakeStorageClient:
 
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
 fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_genai_types = SimpleNamespace(GenerateContentConfig=SimpleNamespace)
+fake_genai = SimpleNamespace(Client=SimpleNamespace, types=fake_genai_types)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
 sys.modules.setdefault(
-    "google", SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core)
+    "google",
+    SimpleNamespace(
+        cloud=fake_google_cloud, api_core=fake_google_api_core, genai=fake_genai
+    ),
 )
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+sys.modules.setdefault("google.genai", fake_genai)
+sys.modules.setdefault("google.genai.types", fake_genai_types)
 
 import engine.batch as batch_mod  # noqa: E402
 from models.game_schedule import GameSchedule
@@ -40,8 +47,9 @@ from models.game_summary import GameSummary
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
-    openai_api_key="test-key",
-    openai_model="gpt-4o-mini",
+    vertex_project="test-project",
+    vertex_location="us-central1",
+    vertex_model="gemini-3.8-flash",
 )
 
 NOW = datetime.now(timezone.utc)

@@ -22,18 +22,31 @@ class _FakeStorageClient:
         )
 
 
+class _FakeGoogleAPIError(Exception):
+    pass
+
+
+fake_genai_types = SimpleNamespace(GenerateContentConfig=SimpleNamespace)
+fake_genai = SimpleNamespace(Client=SimpleNamespace, types=fake_genai_types)
+
 fake_storage = SimpleNamespace(Client=_FakeStorageClient, Bucket=SimpleNamespace)
-fake_exceptions = SimpleNamespace(NotFound=Exception)
+fake_exceptions = SimpleNamespace(
+    NotFound=Exception, GoogleAPIError=_FakeGoogleAPIError
+)
 fake_google_cloud = SimpleNamespace(storage=fake_storage)
 fake_google_api_core = SimpleNamespace(exceptions=fake_exceptions)
 sys.modules.setdefault(
     "google",
-    SimpleNamespace(cloud=fake_google_cloud, api_core=fake_google_api_core),
+    SimpleNamespace(
+        cloud=fake_google_cloud, api_core=fake_google_api_core, genai=fake_genai
+    ),
 )
 sys.modules.setdefault("google.cloud", fake_google_cloud)
 sys.modules.setdefault("google.cloud.storage", fake_storage)
 sys.modules.setdefault("google.api_core", fake_google_api_core)
 sys.modules.setdefault("google.api_core.exceptions", fake_exceptions)
+sys.modules.setdefault("google.genai", fake_genai)
+sys.modules.setdefault("google.genai.types", fake_genai_types)
 
 import api.app as app_mod  # noqa: E402
 from api.app import app  # noqa: E402
@@ -45,8 +58,9 @@ from models.game_summary import GameSummary  # noqa: E402
 
 TEST_SETTINGS = config.Settings(
     gcs_bucket_name="test-bucket",
-    openai_api_key="test-key",
-    openai_model="gpt-4o-mini",
+    vertex_project="test-project",
+    vertex_location="us-central1",
+    vertex_model="gemini-3.8-flash",
 )
 
 NOW = datetime.now(timezone.utc)
@@ -117,15 +131,15 @@ def test_get_game_summary_story_error_returns_502(monkeypatch):
     assert response.status_code == 502
 
 
-def test_get_game_summary_openai_error_returns_503(monkeypatch):
+def test_get_game_summary_vertex_error_returns_503(monkeypatch):
     def fake_summarize(*a, **kw):
-        raise RuntimeError("OpenAI quota exceeded")
+        raise RuntimeError("Vertex AI request failed")
 
     monkeypatch.setattr(app_mod, "summarize_game", fake_summarize)
     with config.override_settings(TEST_SETTINGS):
         response = client.get("/v1/games/1/summary")
     assert response.status_code == 503
-    assert "OpenAI quota exceeded" in response.json()["detail"]
+    assert "Vertex AI request failed" in response.json()["detail"]
 
 
 def test_get_game_summary_unexpected_error_returns_500(monkeypatch):

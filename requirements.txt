@@ -1,4 +1,4 @@
-openai
+google-genai
 python-dotenv
 nhl-api-py
 google-cloud-storage
