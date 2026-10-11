@@ -8,7 +8,7 @@ from gcp_ingestion import check_file_exists, download_json, upload_json
 
 try:  # engine is optional in some environments (e.g. tests)
     from engine.date_index import mark_artifact
-except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)

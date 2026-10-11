@@ -24,7 +24,9 @@ class _FakeStorageClient:
 fake_storage = types.SimpleNamespace(
     Client=_FakeStorageClient, Bucket=types.SimpleNamespace
 )
-fake_exceptions = types.SimpleNamespace(NotFound=Exception)
+fake_exceptions = types.SimpleNamespace(
+    NotFound=Exception, GoogleAPIError=type("GoogleAPIError", (Exception,), {})
+)
 fake_genai_types = types.SimpleNamespace(GenerateContentConfig=types.SimpleNamespace)
 fake_genai = types.SimpleNamespace(Client=types.SimpleNamespace, types=fake_genai_types)
 fake_google_cloud = types.SimpleNamespace(storage=fake_storage)

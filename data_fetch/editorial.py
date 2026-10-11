@@ -5,12 +5,14 @@ from __future__ import annotations
 import logging
 from typing import Any
 
+from google.api_core.exceptions import GoogleAPIError
+
 from config import get_settings
 from gcp_ingestion import check_file_exists, download_json, upload_json
 
 try:  # engine module may not be available in all runtimes
     from engine.date_index import mark_artifact
-except Exception:  # noqa: BLE001  # pragma: no cover - optional dependency
+except ImportError:  # pragma: no cover - optional dependency
     mark_artifact = None  # type: ignore[assignment]
 
 logger = logging.getLogger(__name__)
@@ -188,6 +190,13 @@ def get_editorial(
     if not force_refresh and check_file_exists(bucket, blob_path):
         try:
             cached = download_json(bucket, blob_path)
+        except (GoogleAPIError, ValueError):
+            logger.warning(
+                "Failed to read editorial cache for game %s; fetching live",
+                game_id,
+                exc_info=True,
+            )
+        else:
             if isinstance(cached, dict):
                 _maybe_mark_index(
                     game_id=game_id,
@@ -197,8 +206,6 @@ def get_editorial(
                     mark=mark_index,
                 )
                 return cached
-        except Exception:  # noqa: BLE001, S110 - fall through to live fetch on cache read error
-            pass
 
     # 2) Fetch from Forge DAPI
     editorial = _fetch_from_forge(game_id)

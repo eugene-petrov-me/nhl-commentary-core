@@ -1,6 +1,8 @@
 # engine/summaries.py
 import logging
 
+from google.api_core.exceptions import GoogleAPIError
+
 from config import get_settings
 from gcp_ingestion import check_file_exists, download_text, upload_text
 
@@ -15,8 +17,14 @@ def _mark(artifact: str, *, bucket: str, date: str | None, game_id: int) -> None
         mark_artifact(
             bucket, date=date, game_id=game_id, artifact=artifact, exists=True
         )
-    except Exception:  # noqa: BLE001, S110 - index is convenience only
-        pass
+    except GoogleAPIError:
+        logger.warning(
+            "Failed to mark %s index for game %s on %s",
+            artifact,
+            game_id,
+            date,
+            exc_info=True,
+        )
 
 
 logger = logging.getLogger(__name__)
